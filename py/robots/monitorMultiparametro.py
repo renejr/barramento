@@ -22,7 +22,9 @@ async def simulate_multi_parameter_monitor():
             "respiratory_rate": respiratory_rate
         }
 
-        print(f"Enviado: FC = {heart_rate:.2f} bpm, PA Sistólica = {systolic_bp:.2f} mmHg, PA Diastólica = {diastolic_bp:.2f} mmHg, Sat. O2 = {oxygen_saturation:.2f}%, Temp. = {body_temperature:.2f}°C, FR = {respiratory_rate:.2f} rpm")
+        print(data)
+
+        # print(f"Enviado: FC = {heart_rate:.2f} bpm, PA Sistólica = {systolic_bp:.2f} mmHg, PA Diastólica = {diastolic_bp:.2f} mmHg, Sat. O2 = {oxygen_saturation:.2f}%, Temp. = {body_temperature:.2f}°C, FR = {respiratory_rate:.2f} rpm")
 
         # Aguardar 1 segundo antes de enviar novos dados
         await asyncio.sleep(1)

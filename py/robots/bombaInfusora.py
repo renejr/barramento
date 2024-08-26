@@ -20,14 +20,16 @@ async def simulate_infusion_pump():
                 if random.random() < 0.01:
                     status = random.choice([1, 2, 3])  # Simular um alarme ocasionalmente
 
-                    data = {
-                        'infusion_rate': infusion_rate,
-                        'volume_administered': volume_administered,
-                        'total_volume_administered': total_volume_administered,
-                        'status': status}
+                data = {
+                    'infusion_rate': infusion_rate,
+                    'volume_administered': volume_administered,
+                    'total_volume_administered': total_volume_administered,
+                    'status': status}
+
+                print(data)
                 
                 # Enviando dados de telemetria para o servidor
-                print(f"Enviado: Taxa de Infusão = {infusion_rate:.2f} mL/h, Volume Total Administrado = {total_volume_administered:.2f} mL, Status = {status}")
+                # print(f"Enviado: Taxa de Infusão = {infusion_rate:.2f} mL/h, Volume Total Administrado = {total_volume_administered:.2f} mL, Status = {status}")
 
             # Aguardando comandos ou alterações (simulação apenas de envio neste momento)
             await asyncio.sleep(1)

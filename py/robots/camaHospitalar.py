@@ -25,8 +25,10 @@ async def simulate_hospital_bed():
                 'alarm': alarm
             }
 
+            print(data)
+
             # Enviando dados de telemetria para o servidor
-            print(f"Enviado: Inclinação = {bed_inclination:.2f}°, Elevação Cabeça = {head_elevation:.2f}°, Peso Paciente = {patient_weight:.2f} kg, Alarme = {alarm}")
+            #print(f"Enviado: Inclinação = {bed_inclination:.2f}°, Elevação Cabeça = {head_elevation:.2f}°, Peso Paciente = {patient_weight:.2f} kg, Alarme = {alarm}")
 
             # Aguardar 1 segundo antes de enviar novos dados
             await asyncio.sleep(1)
