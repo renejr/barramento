@@ -1,4 +1,6 @@
 import asyncio
+import websockets
+import struct
 import random
 
 async def simulate_infusion_pump():
@@ -17,6 +19,12 @@ async def simulate_infusion_pump():
                 status = 0  # 0 = Normal, 1 = Oclusão, 2 = Fim de Infusão, 3 = Falha
                 if random.random() < 0.01:
                     status = random.choice([1, 2, 3])  # Simular um alarme ocasionalmente
+
+                    data = {
+                        'infusion_rate': infusion_rate,
+                        'volume_administered': volume_administered,
+                        'total_volume_administered': total_volume_administered,
+                        'status': status}
                 
                 # Enviando dados de telemetria para o servidor
                 print(f"Enviado: Taxa de Infusão = {infusion_rate:.2f} mL/h, Volume Total Administrado = {total_volume_administered:.2f} mL, Status = {status}")

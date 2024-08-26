@@ -17,6 +17,13 @@ async def simulate_triage_station():
             # Convertendo dados para formato binário
             #data = struct.pack('ffffI', temperature, systolic_bp, diastolic_bp, heart_rate, priority)
 
+            data = {
+                'temperature': temperature,
+                'systolic_bp': systolic_bp,
+                'diastolic_bp': diastolic_bp,
+                'heart_rate': heart_rate,
+                'priority': priority}
+
             # Enviando dados de triagem para o servidor
             #await websocket.send(data)
             print(f"Enviado: Temp = {temperature:.2f}°C, PA Sistólica = {systolic_bp:.2f} mmHg, PA Diastólica = {diastolic_bp:.2f} mmHg, FC = {heart_rate:.2f} bpm, Prioridade = {priority}")

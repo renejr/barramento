@@ -1,6 +1,7 @@
 import asyncio
-import random
+import websockets
 import struct
+import random
 
 async def simulate_multi_parameter_monitor():
     while True:
@@ -12,8 +13,14 @@ async def simulate_multi_parameter_monitor():
         body_temperature = random.uniform(36.5, 37.5)  # Temperatura corporal em Celsius
         respiratory_rate = random.uniform(12, 20)  # Frequência respiratória em rpm
 
-        # data = struct.pack('ffffff', heart_rate, systolic_bp, diastolic_bp, oxygen_saturation, body_temperature, respiratory_rate)  # Convertendo dados para formato binário
-        # print(f"Enviado: {data.hex()}")
+        data = {
+            "heart_rate": heart_rate,
+            "systolic_bp": systolic_bp,
+            "diastolic_bp": diastolic_bp,
+            "oxygen_saturation": oxygen_saturation,
+            "body_temperature": body_temperature,
+            "respiratory_rate": respiratory_rate
+        }
 
         print(f"Enviado: FC = {heart_rate:.2f} bpm, PA Sistólica = {systolic_bp:.2f} mmHg, PA Diastólica = {diastolic_bp:.2f} mmHg, Sat. O2 = {oxygen_saturation:.2f}%, Temp. = {body_temperature:.2f}°C, FR = {respiratory_rate:.2f} rpm")
 

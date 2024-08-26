@@ -1,6 +1,7 @@
 import asyncio
-import random
+import websockets
 import struct
+import random
 
 async def simulate_ventilator():
     while True:
@@ -10,6 +11,13 @@ async def simulate_ventilator():
 
         # data = struct.pack('fff', respiratory_rate, 0, tidal_volume)
         # print(f"Enviado: {data.hex()}")
+
+        data = {
+            'respiratory_rate': respiratory_rate,
+            'tidal_volume': tidal_volume
+        }
+
+        print(f"Enviado: Taxa de Respiração = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f}")
 
         # Exibindo os dados de telemetria em tempo real
         print(f"Frequência Respiratória = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f} mL")
