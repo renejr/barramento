@@ -1,8 +1,18 @@
-import curses
-import asyncio
+
 import websockets
 import struct
+import random
+import curses
+import asyncio
 import threading
+from robots import (
+    simulate_multi_parameter_monitor,
+    simulate_infusion_pump,
+    simulate_hospital_bed,
+    simulate_triage_station,
+    simulate_medical_equipment,
+    simulate_ventilator,
+)
 
 # Inicializa as variáveis globais para armazenar os dados de cada equipamento
 equipment_data = {
@@ -11,45 +21,25 @@ equipment_data = {
     "Camas Hospitalares": "",
     "Estação de Triagem": "",
     "Equipamentos Médicos Diversos": "",
+    "Ventilador Mecânico": "",
 }
 alerts = []
 
-async def receive_data_from_equipment():
-    #uri = "ws://localhost:8080"  # Endereço do servidor WebSocket em PHP
-    #async with websockets.connect(uri) as websocket:
-        while True:
-            #data = await websocket.recv()
-            # Exemplo de decodificação de dados - ajuste conforme o formato binário real
-            equipment_type, temperature, systolic_bp, diastolic_bp, heart_rate, alarm = struct.unpack('IffffI', data)
-            
-            # Atualiza os dados de acordo com o tipo de equipamento
-            if equipment_type == 1:
-                equipment_data["Monitores Multiparâmetros"] = f"Temp: {temperature:.1f}°C, PA Sistólica: {systolic_bp:.0f}, PA Diastólica: {diastolic_bp:.0f}, FC: {heart_rate:.0f} bpm"
-                if alarm > 0:
-                    alerts.append(f"Alarme do Monitor Multiparâmetro: Código {alarm}")
-            elif equipment_type == 2:
-                equipment_data["Bombas Infusoras"] = f"Taxa de Infusão: {temperature:.1f} mL/h, Volume Total: {systolic_bp:.1f} mL, Status: {'Ok' if alarm == 0 else 'Falha'}"
-                if alarm > 0:
-                    alerts.append(f"Alarme da Bomba Infusora: Código {alarm}")
-            elif equipment_type == 3:
-                equipment_data["Camas Hospitalares"] = f"Posição da Cabeça: {temperature:.0f}°, Peso do Paciente: {systolic_bp:.1f} kg"
-                if alarm > 0:
-                    alerts.append(f"Alarme da Cama Hospitalar: Código {alarm}")
-            elif equipment_type == 4:
-                equipment_data["Estação de Triagem"] = f"Temp: {temperature:.1f}°C, PA: {systolic_bp:.0f}/{diastolic_bp:.0f}, FC: {heart_rate:.0f} bpm, Prioridade: {alarm}"
-                if alarm > 0:
-                    alerts.append(f"Alarme da Estação de Triagem: Código {alarm}")
-            elif equipment_type == 5:
-                equipment_data["Equipamentos Médicos Diversos"] = f"Status: {'Ativo' if temperature > 0 else 'Inativo'}, Código de Alarme: {alarm}"
-                if alarm > 0:
-                    alerts.append(f"Alarme do Equipamento Diverso: Código {alarm}")
+# Função para atualizar os dados de telemetria dos robôs
+async def update_equipment_data():
+    while True:
+        # Atualiza os dados de cada robô
+        equipment_data["Monitores Multiparâmetros"] = await simulate_multi_parameter_monitor()
+        equipment_data["Bombas Infusoras"] = await simulate_infusion_pump()
+        equipment_data["Camas Hospitalares"] = await simulate_hospital_bed()
+        equipment_data["Estação de Triagem"] = await simulate_triage_station()
+        equipment_data["Equipamentos Médicos Diversos"] = await simulate_medical_equipment()
+        equipment_data["Ventilador Mecânico"] = await simulate_ventilator()
 
-            await asyncio.sleep(1)
+        # Aguarda 1 segundo antes de atualizar novamente
+        await asyncio.sleep(1)
 
-def start_asyncio_loop(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(receive_data_from_equipment())
-
+# Função para desenhar a interface gráfica
 def draw_interface(stdscr):
     curses.curs_set(0)  # Desativa o cursor
 
@@ -88,12 +78,18 @@ def draw_interface(stdscr):
         elif key == ord('d'):
             current_tab = (current_tab + 1) % len(tabs)
 
+# Função principal
 def main():
     loop = asyncio.new_event_loop()
     t = threading.Thread(target=start_asyncio_loop, args=(loop,))
     t.start()
 
     curses.wrapper(draw_interface)
+
+# Função para iniciar o loop assíncrono
+def start_asyncio_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(update_equipment_data())
 
 if __name__ == '__main__':
     main()

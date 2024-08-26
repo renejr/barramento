@@ -16,6 +16,14 @@ async def simulate_medical_equipment():
             # Convertendo dados para formato binário
             #data = struct.pack('fIfI', operation_status, exposure_time, int(image_quality), alarm_code)
 
+        data = {
+                'operation_status': operation_status,
+                'exposure_time': exposure_time,
+                'image_quality': image_quality,
+                'alarm_code': alarm_code}
+            
+
+
             # Enviando dados de telemetria para o servidor
             #await websocket.send(data)
             print(f"Enviado: Status de Operação = {operation_status}, Tempo de Exposição = {exposure_time:.2f}s, Qualidade da Imagem = {image_quality}, Código de Alarme = {alarm_code}")

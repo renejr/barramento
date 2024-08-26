@@ -1,4 +1,5 @@
 import asyncio
+import websockets
 import struct
 import random
 
@@ -16,6 +17,13 @@ async def simulate_hospital_bed():
 
             # Convertendo dados para formato binário
             # data = struct.pack('fffI', bed_inclination, head_elevation, patient_weight, alarm)
+
+            data = {
+                'bed_inclination': bed_inclination,
+                'head_elevation': head_elevation,
+                'patient_weight': patient_weight,
+                'alarm': alarm
+            }
 
             # Enviando dados de telemetria para o servidor
             print(f"Enviado: Inclinação = {bed_inclination:.2f}°, Elevação Cabeça = {head_elevation:.2f}°, Peso Paciente = {patient_weight:.2f} kg, Alarme = {alarm}")
