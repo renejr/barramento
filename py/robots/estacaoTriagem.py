@@ -24,9 +24,11 @@ async def simulate_triage_station():
                 'heart_rate': heart_rate,
                 'priority': priority}
 
+            print(data)
+            
             # Enviando dados de triagem para o servidor
             #await websocket.send(data)
-            print(f"Enviado: Temp = {temperature:.2f}°C, PA Sistólica = {systolic_bp:.2f} mmHg, PA Diastólica = {diastolic_bp:.2f} mmHg, FC = {heart_rate:.2f} bpm, Prioridade = {priority}")
+            #print(f"Enviado: Temp = {temperature:.2f}°C, PA Sistólica = {systolic_bp:.2f} mmHg, PA Diastólica = {diastolic_bp:.2f} mmHg, FC = {heart_rate:.2f} bpm, Prioridade = {priority}")
 
             # Aguardar 1 segundo antes de enviar novos dados
             await asyncio.sleep(1)

@@ -17,10 +17,12 @@ async def simulate_ventilator():
             'tidal_volume': tidal_volume
         }
 
-        print(f"Enviado: Taxa de Respiração = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f}")
+        print(data)
+        
+        #print(f"Enviado: Taxa de Respiração = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f}")
 
         # Exibindo os dados de telemetria em tempo real
-        print(f"Frequência Respiratória = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f} mL")
+        #print(f"Frequência Respiratória = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f} mL")
 
         # Aguardar 1 segundo antes de enviar novos dados
         await asyncio.sleep(1)
