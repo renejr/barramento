@@ -2,30 +2,61 @@ import asyncio
 import websockets
 import struct
 import random
+import time
 
 async def simulate_ventilator():
     while True:
-        # Simulando dados de telemetria (por exemplo, frequência respiratória, volume corrente)
-        respiratory_rate = random.uniform(10, 30)  # Simulando uma frequência respiratória
-        tidal_volume = random.uniform(300, 600)  # Simulando um volume corrente em mL
+        # -- Dados do Ventilador --
+        respiratory_rate = random.uniform(10, 30)  
+        tidal_volume = random.uniform(300, 600)  
+        inspiratory_pressure = random.uniform(10, 40)  
+        fio2 = random.uniform(0.21, 1.0)  
+        ventilation_mode = random.choice(["VCV", "PCV", "PSV"])  
 
-        # data = struct.pack('fff', respiratory_rate, 0, tidal_volume)
-        # print(f"Enviado: {data.hex()}")
+        # -- Lógica de Alarmes --
+        alarms = []
+        if respiratory_rate > 25:
+            alarms.append("FR Alta")
+        if respiratory_rate < 8:
+            alarms.append("FR Baixa")
+        if tidal_volume > 700:
+            alarms.append("VC Alto")
+        if inspiratory_pressure > 35:
+            alarms.append("PIns Alta")
+        if inspiratory_pressure < 5:
+            alarms.append("PIns Baixa")
 
+        alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes"
+        alarm_bytes = alarm_string.encode('utf-8')
+        alarm_size = len(alarm_bytes)
+
+        # -- Microtimestamp --
+        microtimestamp = int(time.time() * 1000) # Tempo em milissegundos desde 1 de janeiro de 1970
+
+        # -- Empacotamento de Dados --
+        dataBin = struct.pack(f'ffffsI{alarm_size}sQ', 
+                             respiratory_rate, 
+                             tidal_volume, 
+                             inspiratory_pressure, 
+                             fio2, 
+                             ventilation_mode.encode('utf-8'),
+                             alarm_size,
+                             alarm_bytes,
+                             microtimestamp)
+        
         data = {
             'respiratory_rate': respiratory_rate,
-            'tidal_volume': tidal_volume
+            'tidal_volume': tidal_volume,
+            'inspiratory_pressure': inspiratory_pressure,
+            'fio2': fio2,
+            'ventilation_mode': ventilation_mode,
+            'alarms': alarm_string,
+            'timestamp': microtimestamp 
         }
 
         print(data)
+        print(f"Enviado: {dataBin.hex()}")
         
-        #print(f"Enviado: Taxa de Respiração = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f}")
-
-        # Exibindo os dados de telemetria em tempo real
-        #print(f"Frequência Respiratória = {respiratory_rate:.2f}, Volume Corrente = {tidal_volume:.2f} mL")
-
-        # Aguardar 1 segundo antes de enviar novos dados
         await asyncio.sleep(1)
 
-# Executando o simulador de ventilador mecânico
 asyncio.run(simulate_ventilator())
