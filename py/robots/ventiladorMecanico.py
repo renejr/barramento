@@ -1,17 +1,36 @@
-import asyncio
-import websockets
-import struct
 import random
 import time
+import struct
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer  # Importe QTimer aqui
 
-async def simulate_ventilator():
-    while True:
+class VentiladorSimulator(QObject):
+    data_updated = pyqtSignal(tuple)  # Sinal para enviar dados para a GUI
+
+    def __init__(self):
+        super().__init__()
+        self.timer = QTimer()  # Agora você pode usar QTimer
+        self.timer.setInterval(1000)  # Atualiza a cada 1 segundo
+        self.timer.timeout.connect(self.generate_data)
+        self.is_running = False
+
+    def start(self):
+        self.is_running = True
+        self.timer.start()
+
+    def stop(self):
+        self.is_running = False
+        self.timer.stop()
+
+    def generate_data(self):
+        if not self.is_running:
+            return
+
         # -- Dados do Ventilador --
-        respiratory_rate = random.uniform(10, 30)  
-        tidal_volume = random.uniform(300, 600)  
-        inspiratory_pressure = random.uniform(10, 40)  
-        fio2 = random.uniform(0.21, 1.0)  
-        ventilation_mode = random.choice(["VCV", "PCV", "PSV"])  
+        respiratory_rate = random.uniform(10, 30)
+        tidal_volume = random.uniform(300, 600)
+        inspiratory_pressure = random.uniform(10, 40)
+        fio2 = random.uniform(0.21, 1.0)
+        ventilation_mode = random.choice(["VCV", "PCV", "PSV"])
 
         # -- Lógica de Alarmes --
         alarms = []
@@ -26,37 +45,21 @@ async def simulate_ventilator():
         if inspiratory_pressure < 5:
             alarms.append("PIns Baixa")
 
-        alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes"
-        alarm_bytes = alarm_string.encode('utf-8')
-        alarm_size = len(alarm_bytes)
+        alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes" # Mova esta linha para cá!
 
         # -- Microtimestamp --
-        microtimestamp = int(time.time() * 1000) # Tempo em milissegundos desde 1 de janeiro de 1970
+        microtimestamp = int(time.time() * 1000)
 
-        # -- Empacotamento de Dados --
-        dataBin = struct.pack(f'ffffsI{alarm_size}sQ', 
-                             respiratory_rate, 
-                             tidal_volume, 
-                             inspiratory_pressure, 
-                             fio2, 
-                             ventilation_mode.encode('utf-8'),
-                             alarm_size,
-                             alarm_bytes,
-                             microtimestamp)
-        
-        data = {
-            'respiratory_rate': respiratory_rate,
-            'tidal_volume': tidal_volume,
-            'inspiratory_pressure': inspiratory_pressure,
-            'fio2': fio2,
-            'ventilation_mode': ventilation_mode,
-            'alarms': alarm_string,
-            'timestamp': microtimestamp 
-        }
+        # -- Empacotamento de Dados (opcional) --
+        # dataBin = struct.pack(f'ffffsI{alarm_size}sQ', 
+        #                      respiratory_rate, 
+        #                      tidal_volume, 
+        #                      inspiratory_pressure, 
+        #                      fio2, 
+        #                      ventilation_mode.encode('utf-8'),
+        #                      alarm_size,
+        #                      alarm_bytes,
+        #                      microtimestamp)
 
-        print(data)
-        print(f"Enviado: {dataBin.hex()}")
-        
-        await asyncio.sleep(1)
-
-asyncio.run(simulate_ventilator())
+        # Envie os dados para a interface gráfica
+        self.data_updated.emit((respiratory_rate, tidal_volume, inspiratory_pressure, fio2, ventilation_mode, alarm_string, microtimestamp))
