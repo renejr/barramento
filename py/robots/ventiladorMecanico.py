@@ -3,45 +3,50 @@ import time
 import asyncio
 import websockets
 import struct
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer  # Importe QTimer aqui
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
+
 
 class VentiladorSimulator(QObject):
-    data_updated = pyqtSignal(tuple)  # Sinal para enviar dados para a GUI
+    data_updated = pyqtSignal(tuple)
 
     def __init__(self):
         super().__init__()
-        self.timer = QTimer()  # Agora você pode usar QTimer
-        self.timer.setInterval(1000)  # Atualiza a cada 1 segundo
-        self.timer.timeout.connect(self.generate_data)
+        self.timer = None  # Inicialmente, o timer é None
         self.is_running = False
 
+    def setup_timer(self):
+        self.timer = QTimer(self)  # Crie o timer aqui
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.generate_data)
+
     def start(self):
+        if self.timer is None:
+            self.setup_timer()  # Configura o timer somente quando necessário
         self.is_running = True
-        self.timer.start()
+        self.timer.start()  # Inicie o timer aqui
 
     def stop(self):
         self.is_running = False
-        self.timer.stop()
+        if self.timer is not None:
+            self.timer.stop()
 
     async def send_data_websocket(self, data):
-        uri = "ws://localhost:8080"  # Endereço do servidor WebSocket
+        uri = "ws://localhost:8080"
         async with websockets.connect(uri) as websocket:
-            # Converte os dados para binário usando struct.pack
             data_bin = struct.pack(f'ffff{len(data[4])}s{len(data[5])}sQ', *data)
             await websocket.send(data_bin)
 
     def generate_data(self):
         if not self.is_running:
             return
-
-        # -- Dados do Ventilador --
+        
+        # device = 'VM'
         respiratory_rate = random.uniform(10, 30)
         tidal_volume = random.uniform(300, 600)
         inspiratory_pressure = random.uniform(10, 40)
         fio2 = random.uniform(0.21, 1.0)
         ventilation_mode = random.choice(["VCV", "PCV", "PSV"])
 
-        # -- Lógica de Alarmes --
         alarms = []
         if respiratory_rate > 25:
             alarms.append("FR Alta")
@@ -54,24 +59,22 @@ class VentiladorSimulator(QObject):
         if inspiratory_pressure < 5:
             alarms.append("PIns Baixa")
 
-        alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes" # Mova esta linha para cá!
+        alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes"
 
-        # -- Microtimestamp --
         microtimestamp = int(time.time() * 1000)
 
-        # -- Empacotamento de Dados (opcional) --
-        # dataBin = struct.pack(f'ffffsI{alarm_size}sQ', 
-        #                      respiratory_rate, 
-        #                      tidal_volume, 
-        #                      inspiratory_pressure, 
-        #                      fio2, 
-        #                      ventilation_mode.encode('utf-8'),
-        #                      alarm_size,
-        #                      alarm_bytes,
-        #                      microtimestamp)
+        asyncio.run(self.send_data_websocket((respiratory_rate,
+                                            tidal_volume,
+                                            inspiratory_pressure,
+                                            fio2,
+                                            ventilation_mode.encode('utf-8'),
+                                            alarm_string.encode('utf-8'),
+                                            microtimestamp)))
 
-        # Envia os dados pelo WebSocket
-        asyncio.run(self.send_data_websocket((respiratory_rate, tidal_volume, inspiratory_pressure, fio2, ventilation_mode.encode('utf-8'), alarm_string.encode('utf-8'), microtimestamp)))
-        
-        # Sinal para a GUI (opcional, se ainda for necessário)
-        self.data_updated.emit((respiratory_rate, tidal_volume, inspiratory_pressure, fio2, ventilation_mode, alarm_string, microtimestamp))
+        self.data_updated.emit((respiratory_rate,
+                                tidal_volume,
+                                inspiratory_pressure,
+                                fio2,
+                                ventilation_mode,
+                                alarm_string,
+                                microtimestamp))
