@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ventilador Mecânico</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Ventilador Mecânico (<span id="device"></span>)</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <p>Frequência Respiratória: <span id="respiratory_rate"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            function updateData() {
+                $.ajax({
+                    url: "ventilador.php",
+                    dataType: "json",
+                    success: function(data) {
+                        $("#device").text(data.device);
+                        $("#respiratory_rate").text(data.respiratory_rate);
+                        // ... (atualiza os demais elementos da interface)
+                    }
+                });
+            }
+
+            // Atualiza os dados a cada segundo
+            setInterval(updateData, 1000); 
+        });
+    </script>
+</body>
+</html>
