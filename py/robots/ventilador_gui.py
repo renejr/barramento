@@ -1,9 +1,9 @@
 import sys
 import time
 import struct
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout, QMessageBox, QStyleFactory
 from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPalette
 import pyqtgraph as pg  # Importe o pyqtgraph para gráficos
 
 from ventiladorMecanico import VentiladorSimulator  # Importe a classe do simulador
@@ -54,6 +54,10 @@ class VentiladorGUI(QMainWindow):
         self.btn_pause.setEnabled(False)  # Começa desabilitado
         navbar_layout.addWidget(self.btn_pause)
 
+        self.btn_gravar = QPushButton("Gravar")
+        #self.btn_gravar.clicked.connect(self.gravar)
+        navbar_layout.addWidget(self.btn_gravar)
+
         self.btn_stop = QPushButton("Parar")
         self.btn_stop.clicked.connect(self.stop_simulation)
         self.btn_stop.setEnabled(False)  # Começa desabilitado
@@ -62,6 +66,81 @@ class VentiladorGUI(QMainWindow):
         self.btn_exit = QPushButton("Sair")
         self.btn_exit.clicked.connect(self.close_application)
         navbar_layout.addWidget(self.btn_exit)
+
+    # -- Folha de Estilo para o Botão "Iniciar" --
+        start_button_style = """
+        QPushButton {
+            background-color: lightgreen; 
+            font-weight: bold; 
+            color: black;
+        }
+        QPushButton:hover {
+            background-color: darkgreen;
+            font-weight: bold;
+            color: white;
+        }
+        """
+    # -- Folha de Estilo para o Botão "Pausar" --
+        pause_button_style = """
+        QPushButton {
+            background-color: lightblue; 
+            font-weight: bold; 
+            color: black;
+        }
+        QPushButton:hover {
+            background-color: darkblue;
+            font-weight: bold;
+            color: white;
+        }
+        """    
+
+    # -- Folha de Estilo para o Botão "Gravar" --
+        gravar_button_style = """
+        QPushButton {
+            background-color: lightyellow; 
+            font-weight: bold; 
+            color: black;
+        }
+        QPushButton:hover {
+            background-color: yellow;
+            font-weight: bold;
+            color: black;
+        }
+        """
+   
+    # -- Folha de Estilo para o Botão "Parar" --
+        stop_button_style = """
+        QPushButton {
+            background-color: darkred; 
+            font-weight: bold; 
+            color: white;
+        }
+        QPushButton:hover {
+            background-color: red;
+            font-weight: bold;
+            color: black;
+        }
+        """
+
+    # -- Folha de Estilo para o Botão "Sair" --
+        exit_button_style = """
+        QPushButton {
+            background-color: lightgray; 
+            font-weight: bold; 
+            color: black;
+        }
+        QPushButton:hover {
+            background-color: darkgray;
+            font-weight: bold;
+            color: white;
+        }
+        """
+
+        self.btn_start.setStyleSheet(start_button_style)  # Aplica a folha de estilo
+        self.btn_pause.setStyleSheet(pause_button_style)  # Aplica a folha de estilo
+        self.btn_gravar.setStyleSheet(gravar_button_style)  # Aplica a folha de estilo
+        self.btn_stop.setStyleSheet(stop_button_style)  # Aplica a folha de estilo
+        self.btn_exit.setStyleSheet(exit_button_style)  # Aplica a folha de estilo
 
         # ... (adicione botões para Gravar e Sair) ...
 
@@ -76,11 +155,10 @@ class VentiladorGUI(QMainWindow):
         self.curve_rr = self.plot_rr.plot(pen='b')  # Crie a curva AQUI!
         self.data_rr = []
 
-        # -- Box do Volume Corrente --
-        self.vc_label = QLabel("VC: --")  # Inicializa com "--"
-        self.vc_label.setStyleSheet("background-color: lightblue; font-size: 16px; padding: 10px;")
-        self.vc_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.vc_label, 2, 0)  # Adiciona abaixo do gráfico de FR
+        # -- Gráfico do Volume Corrente --
+        self.plot_vc = self.graph_widget.addPlot(title="Volume Corrente (VC)")
+        self.curve_vc = self.plot_vc.plot(pen='r')  # Crie a curva do VC (vermelho)
+        self.data_vc = []  # Lista para armazenar os dados do VC
 
         # ... (crie outros gráficos para Volume Corrente, etc.) ...
 
@@ -133,8 +211,9 @@ class VentiladorGUI(QMainWindow):
 
         # ... (atualize os outros gráficos) ...
 
-        # Atualiza o box do Volume Corrente
-        self.vc_label.setText(f"VC: {tidal_volume:.2f} mL")
+        # Atualiza o gráfico do Volume Corrente
+        self.data_vc.append(tidal_volume) 
+        self.curve_vc.setData(self.data_vc)
 
         # Atualiza a caixa de alarmes
         self.alarm_label.setText(alarm_string)
