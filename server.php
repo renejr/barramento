@@ -54,5 +54,5 @@ $server = \Ratchet\Server\IoServer::factory(
     ),
     8080
 );
-
+echo "Servidor WebSocket iniciado na porta 8080.\n";
 $server->run();
