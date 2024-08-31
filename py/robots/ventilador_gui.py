@@ -183,9 +183,19 @@ class VentiladorGUI(QMainWindow):
         layout.addWidget(self.alarm_label, 3, 0, 1, 2)  # Caixa de alarmes na quarta linha
 
     def start_simulation(self):
-        if not self.simulator_thread.isRunning():  # Verifica se a thread já está em execução
+        # Verifica se a thread já foi criada
+        if not hasattr(self, 'simulator_thread'):
+            print("Criando e iniciando a thread...")
+            self.simulator_thread = QThread()
+            self.worker = Worker()
+            self.worker.moveToThread(self.simulator_thread)
+            self.worker.data_updated.connect(self.update_data)
             self.simulator_thread.start()
             self.worker.start_simulator.emit()  # Emite o sinal para iniciar a simulação
+        else:
+            # Se a thread já existe, apenas emite o sinal para iniciar
+            print("Thread já existe, iniciando a simulação...")
+            self.worker.start_simulator.emit()
 
     # Limpa os dados dos gráficos antes de iniciar a simulação
         self.data_rr.clear() 
