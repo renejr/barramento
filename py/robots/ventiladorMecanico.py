@@ -5,7 +5,6 @@ import websockets
 import struct
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 
-
 class VentiladorSimulator(QObject):
     data_updated = pyqtSignal(tuple)
 
@@ -31,21 +30,26 @@ class VentiladorSimulator(QObject):
             self.timer.stop()
 
     async def send_data_websocket(self, data):
+        device = 'VM'  # Define o nome do dispositivo
         uri = "ws://localhost:8080"
         async with websockets.connect(uri) as websocket:
-            data_bin = struct.pack(f'ffff{len(data[4])}s{len(data[5])}sQ', *data)
+            # Calcula o tamanho da string do device CORRIGIDO
+            device_size = len(device)  
+            # Define o formato incluindo o tamanho do device
+            data_format = f'{device_size}sffff{len(data[5])}s{len(data[6])}sQ'  
+            data_bin = struct.pack(data_format, *data)
             await websocket.send(data_bin)
 
     def generate_data(self):
         if not self.is_running:
             return
         
-        # device = 'VM'
         respiratory_rate = random.uniform(10, 30)
         tidal_volume = random.uniform(300, 600)
         inspiratory_pressure = random.uniform(10, 40)
         fio2 = random.uniform(0.21, 1.0)
         ventilation_mode = random.choice(["VCV", "PCV", "PSV"])
+        device = 'VM'  # Define o nome do dispositivo
 
         alarms = []
         if respiratory_rate > 25:
@@ -63,7 +67,9 @@ class VentiladorSimulator(QObject):
 
         microtimestamp = int(time.time() * 1000)
 
-        asyncio.run(self.send_data_websocket((respiratory_rate,
+        asyncio.run(self.send_data_websocket((
+                                            device.encode('utf-8'), # Inclui o device no envio
+                                            respiratory_rate,
                                             tidal_volume,
                                             inspiratory_pressure,
                                             fio2,
