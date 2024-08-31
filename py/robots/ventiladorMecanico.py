@@ -1,5 +1,7 @@
 import random
 import time
+import asyncio
+import websockets
 import struct
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer  # Importe QTimer aqui
 
@@ -20,6 +22,13 @@ class VentiladorSimulator(QObject):
     def stop(self):
         self.is_running = False
         self.timer.stop()
+
+    async def send_data_websocket(self, data):
+        uri = "ws://localhost:8080"  # Endereço do servidor WebSocket
+        async with websockets.connect(uri) as websocket:
+            # Converte os dados para binário usando struct.pack
+            data_bin = struct.pack(f'ffff{len(data[4])}s{len(data[5])}sQ', *data)
+            await websocket.send(data_bin)
 
     def generate_data(self):
         if not self.is_running:
@@ -61,5 +70,8 @@ class VentiladorSimulator(QObject):
         #                      alarm_bytes,
         #                      microtimestamp)
 
-        # Envie os dados para a interface gráfica
+        # Envia os dados pelo WebSocket
+        asyncio.run(self.send_data_websocket((respiratory_rate, tidal_volume, inspiratory_pressure, fio2, ventilation_mode.encode('utf-8'), alarm_string.encode('utf-8'), microtimestamp)))
+        
+        # Sinal para a GUI (opcional, se ainda for necessário)
         self.data_updated.emit((respiratory_rate, tidal_volume, inspiratory_pressure, fio2, ventilation_mode, alarm_string, microtimestamp))
