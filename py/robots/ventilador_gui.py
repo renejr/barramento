@@ -80,6 +80,7 @@ class VentiladorGUI(QMainWindow):
             color: white;
         }
         """
+    
     # -- Folha de Estilo para o Botão "Pausar" --
         pause_button_style = """
         QPushButton {
@@ -151,18 +152,28 @@ class VentiladorGUI(QMainWindow):
         self.graph_widget = pg.GraphicsLayoutWidget()
 
         # Exemplo: gráfico de frequência respiratória
-        self.plot_rr = self.graph_widget.addPlot(title="Frequência Respiratória (RR)")
+        self.plot_rr = self.graph_widget.addPlot(title="Frequência Respiratória (RR)", row=0, col=0)  # FR na linha 1, coluna 1
         self.curve_rr = self.plot_rr.plot(pen='b')  # Crie a curva AQUI!
         self.data_rr = []
 
         # -- Gráfico do Volume Corrente --
-        self.plot_vc = self.graph_widget.addPlot(title="Volume Corrente (VC)")
+        self.plot_vc = self.graph_widget.addPlot(title="Volume Corrente (VC)", row=0, col=1)  # VC na linha 1, coluna 2
         self.curve_vc = self.plot_vc.plot(pen='r')  # Crie a curva do VC (vermelho)
         self.data_vc = []  # Lista para armazenar os dados do VC
 
-        # ... (crie outros gráficos para Volume Corrente, etc.) ...
+        # -- Gráfico da Pressão Inspiratória --
+        self.plot_pressure = self.graph_widget.addPlot(title="Pressão Inspiratória (PIns)", row=1, col=0)  # PIns na linha 2, coluna 1
+        self.curve_pressure = self.plot_pressure.plot(pen='g')  # Crie a curva (verde)
+        self.data_pressure = []  # Lista para armazenar os dados da pressão
 
-        layout.addWidget(self.graph_widget, 1, 0)  # Adiciona os gráficos na segunda linha
+        # -- Gráfico do FiO2 --
+        self.plot_fio2 = self.graph_widget.addPlot(title="FiO2 (%)", row=1, col=1)  # FiO2 na linha 2, coluna 2
+        self.curve_fio2 = self.plot_fio2.plot(pen='y')  # Crie a curva (amarelo)
+        self.data_fio2 = []  # Lista para armazenar os dados do FiO2
+
+        # Adicionando os gráficos ao layout em duas linhas:
+        layout.addWidget(self.graph_widget, 1, 0, 2, 2)  # Gráficos ocupam 2 linhas e 2 colunas
+
 
     def create_alarm_box(self, layout):
             self.alarm_label = QLabel("Sem Alarmes")
@@ -214,6 +225,14 @@ class VentiladorGUI(QMainWindow):
         # Atualiza o gráfico do Volume Corrente
         self.data_vc.append(tidal_volume) 
         self.curve_vc.setData(self.data_vc)
+
+        # Atualiza o gráfico da Pressão Inspiratória
+        self.data_pressure.append(inspiratory_pressure)
+        self.curve_pressure.setData(self.data_pressure)
+
+        # Atualiza o gráfico do FiO2
+        self.data_fio2.append(fio2)
+        self.curve_fio2.setData(self.data_fio2)
 
         # Atualiza a caixa de alarmes
         self.alarm_label.setText(alarm_string)
