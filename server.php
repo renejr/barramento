@@ -31,15 +31,50 @@ class MyWebSocketServer implements MessageComponentInterface {
         $inspiratoryPressure = $data['PIns'];
         $fio2 = $data['fio2'];
 
+        // Cria um array associativo com os dados
+        $ventiladorData = [
+            "device" => $device,
+            "RR" => $respiratoryRate,
+            "VC" => $tidalVolume,
+            "PIns" => $inspiratoryPressure,
+            "fio2" => $fio2
+            // ... adicione outros dados conforme necessário
+        ];
+
+        //print_r($ventiladorData);
+        //echo "\n";
+
+        // Salva os dados no arquivo JSON
+        $dataFile = 'ventilador_data.json';
+
+        // Converte ventiladorData para JSON
+        $ventiladorDataJson = json_encode($ventiladorData);
+
+        //echo ("ventiladorDataJson: $ventiladorDataJson\n");
+        //echo ("dataFile: $dataFile\n");
+
+        // Verifica o diretório atual
+        echo "Diretório atual: " . getcwd() . "\n";
+
+        // Grava o JSON no arquivo
+        $result = file_put_contents($dataFile, $ventiladorDataJson);
+
+        if ($result !== false) {
+            echo "Dados gravados com sucesso em $dataFile\n";
+        } else {
+            echo "Erro ao gravar os dados no arquivo $dataFile\n";
+        }
+
+
+
         // Imprime os dados decodificados (apenas para debug)
-        echo "Device: $device\n";
-        echo "Frequência Respiratória: $respiratoryRate\n";
-        echo "Volume Corrente: $tidalVolume\n";
-        echo "Pressão Inspiratória: $inspiratoryPressure\n";
-        echo "FiO2: $fio2\n";
+        // echo "Device: $device\n";
+        // echo "Frequência Respiratória: $respiratoryRate\n";
+        // echo "Volume Corrente: $tidalVolume\n";
+        // echo "Pressão Inspiratória: $inspiratoryPressure\n";
+        // echo "FiO2: $fio2\n";
 
         // TODO: Implemente a lógica para armazenar os dados (ex: banco de dados, arquivo, etc.)
-
 
         foreach ($this->clients as $client) {
             if ($from !== $client) {

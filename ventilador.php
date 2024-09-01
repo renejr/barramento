@@ -1,18 +1,28 @@
 <?php
-// Inclua a biblioteca para lidar com WebSocket (se necessÃ¡rio)
+// Define o caminho para o arquivo onde os dados do WebSocket serão armazenados
+$dataFile = 'ventilador_data.json';
 
-// Recebe a Ãºltima mensagem do WebSocket (implemente a lÃ³gica de acordo com sua biblioteca)
-$data = getLatestWebSocketData(); 
+// Função para ler os dados do arquivo
+function getVentiladorData() {
+    global $dataFile;
+    if (file_exists($dataFile)) {
+        $data = json_decode(file_get_contents($dataFile), true);
+        return $data;
+    } else {
+        return []; // Retorna um array vazio se o arquivo não existir
+    }
+}
 
-// Decodifica os dados binÃ¡rios (usando a mesma ordem do struct.pack em Python)
-$device = unpack("a*", substr($data, 0, 2))[1]; // LÃª 2 bytes como string
-$respiratory_rate = unpack("f", substr($data, 2, 4))[1]; // LÃª 4 bytes como float
-// ... (decodifica os demais dados)
+// Obtém os dados do arquivo
+$ventiladorData = getVentiladorData();
 
-// Formata os dados para exibiÃ§Ã£o
+// Formata os dados para exibição
 $formattedData = [
-    "device" => $device,
-    "respiratory_rate" => number_format($respiratory_rate, 2),
+    "device" => isset($ventiladorData['device']) ? $ventiladorData['device'] : 'N/A',
+    "respiratory_rate" => isset($ventiladorData['RR']) ? number_format($ventiladorData['RR'], 2) : 'N/A',
+    "tidal_volume" => isset($ventiladorData['VC']) ? number_format($ventiladorData['VC'], 2) : 'N/A',
+    "inspiratory_pressure" => isset($ventiladorData['PIns']) ? number_format($ventiladorData['PIns'], 2) : 'N/A',
+    "fio2" => isset($ventiladorData['fio2']) ? number_format($ventiladorData['fio2'], 2) : 'N/A'
     // ... (formata os demais dados)
 ];
 

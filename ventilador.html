@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ventilador MecÃ¢nico</title>
+    <title>Ventilador Mecânico</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Ventilador MecÃ¢nico (<span id="device"></span>)</h1>
+        <h1>Ventilador Mecânico (<span id="device"></span>)</h1>
         <div class="row">
             <div class="col-md-6">
-                <p>FrequÃªncia RespiratÃ³ria: <span id="respiratory_rate"></span></p>
-                </div>
+                <p>Frequência Respiratória: <span id="respiratory_rate"></span></p>
+                <p>Volume Corrente: <span id="tidal_volume"></span></p>
+                <p>Pressão Inspiratória: <span id="inspiratory_pressure"></span></p>
+                <p>FiO2: <span id="fio2"></span></p>
             </div>
         </div>
     </div>
@@ -25,7 +27,13 @@
                     success: function(data) {
                         $("#device").text(data.device);
                         $("#respiratory_rate").text(data.respiratory_rate);
+                        $("#tidal_volume").text(data.tidal_volume);
+                        $("#inspiratory_pressure").text(data.inspiratory_pressure);
+                        $("#fio2").text(data.fio2);
                         // ... (atualiza os demais elementos da interface)
+                    },
+                    error: function() {
+                        console.error("Erro ao buscar dados do ventilador.");
                     }
                 });
             }
