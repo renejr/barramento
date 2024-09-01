@@ -1,22 +1,22 @@
 <?php
-// Define o caminho para o arquivo onde os dados do WebSocket serão armazenados
+// Define o caminho para o arquivo onde os dados do WebSocket serÃ£o armazenados
 $dataFile = 'ventilador_data.json';
 
-// Função para ler os dados do arquivo
+// FunÃ§Ã£o para ler os dados do arquivo
 function getVentiladorData() {
     global $dataFile;
     if (file_exists($dataFile)) {
         $data = json_decode(file_get_contents($dataFile), true);
         return $data;
     } else {
-        return []; // Retorna um array vazio se o arquivo não existir
+        return []; // Retorna um array vazio se o arquivo nÃ£o existir
     }
 }
 
-// Obtém os dados do arquivo
+// ObtÃ©m os dados do arquivo
 $ventiladorData = getVentiladorData();
 
-// Formata os dados para exibição
+// Formata os dados para exibiÃ§Ã£o
 $formattedData = [
     "device" => isset($ventiladorData['device']) ? $ventiladorData['device'] : 'N/A',
     "respiratory_rate" => isset($ventiladorData['RR']) ? number_format($ventiladorData['RR'], 2) : 'N/A',
