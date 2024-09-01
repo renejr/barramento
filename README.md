@@ -1,49 +1,44 @@
-# barramentoSimulador de Equipamentos Médicos em Python
-Este projeto consiste em um conjunto de scripts Python que simulam o comportamento de diversos equipamentos médicos, enviando dados de telemetria para um servidor WebSocket.
+Simulador de Equipamentos Médicos em Python com Dashboard Interativo
+Este projeto simula o comportamento de diversos equipamentos médicos, enviando dados de telemetria em tempo real para um dashboard interativo, construído com Flask e Socket.IO.
 
-Objetivo:
+Objetivo
+O projeto visa:
 
-Demonstrar a comunicação entre equipamentos médicos e um sistema central: Simular o envio de dados de telemetria de diferentes equipamentos para um servidor central, representando um sistema de monitoramento e controle.
-Facilitar o desenvolvimento e teste de aplicações de saúde: Fornecer um ambiente de simulação para testar e desenvolver aplicações que interagem com dados de equipamentos médicos.
-Estrutura do Projeto:
+Demonstrar a comunicação em tempo real: Simula o envio de dados de telemetria de diferentes equipamentos para um dashboard central, representando um sistema de monitoramento e controle em tempo real.
+Auxiliar no desenvolvimento e teste de aplicações de saúde: Fornece um ambiente de simulação para testar e desenvolver aplicações que interagem com dados de equipamentos médicos em tempo real.
+Visualizar dados de forma clara e intuitiva: Apresenta os dados simulados em um dashboard interativo, facilitando a análise e acompanhamento das informações.
+Estrutura do Projeto
+O projeto é composto por:
 
-O projeto é organizado em vários arquivos Python, cada um representando um tipo de equipamento médico:
+Simuladores de Equipamentos Médicos: Scripts Python que simulam o comportamento de diferentes equipamentos, enviando dados específicos via WebSocket:
+camaHospitalar.py: Simula uma cama hospitalar.
+bombaInfusora.py: Simula uma bomba infusora.
+estacaoTriagem.py: Simula uma estação de triagem.
+equipamentosMedicosDiversos.py: Simula um equipamento médico genérico.
+monitorMultiparametro.py: Simula um monitor multiparâmetro.
+ventiladorMecanico.py: Simula um ventilador mecânico.
+Servidor WebSocket: Utiliza Flask-SocketIO para gerenciar a comunicação bidirecional em tempo real entre os simuladores e o dashboard.
+Dashboard Interativo: Interface web construída com Flask que exibe os dados recebidos dos simuladores em tempo real, utilizando gráficos e elementos visuais para melhor acompanhamento.
 
-camaHospitalar.py: Simula uma cama hospitalar, enviando dados como inclinação, elevação da cabeça, peso do paciente e status de alarme.
-bombaInfusora.py: Simula uma bomba infusora, enviando dados como taxa de infusão, volume total administrado e status da infusão.
-estacaoTriagem.py: Simula uma estação de triagem, enviando dados como temperatura, pressão arterial, frequência cardíaca e prioridade do paciente.
-equipamentosMedicosDiversos.py: Simula um equipamento médico genérico, enviando dados como status de operação, tempo de exposição, qualidade da imagem e código de alarme.
-monitorMultiparametro.py: Simula um monitor multiparâmetro, enviando dados como frequência cardíaca, pressão arterial, saturação de oxigênio, temperatura corporal e frequência respiratória.
-ventiladorMecanico.py: Simula um ventilador mecânico, enviando dados como frequência respiratória e volume corrente.
-dash.py: Um script Flask que recebe dados do servidor WebSocket e os exibe em um dashboard HTML.
-Como Executar:
+Como Executar
 
-Instale as dependências:
+Instalação de Dependências:
+pip install websockets flask flask-socketio
 
-pip install websockets flask-socketio
-Execute o servidor WebSocket:
+Inicialização do Servidor WebSocket:
+python app.py 
 
-Opção 1: Utilizando um servidor WebSocket externo: Configure um servidor WebSocket (como o Socket.IO) e ajuste o endereço uri nos scripts Python para apontar para o servidor.
-Opção 2: Utilizando um servidor WebSocket simples em Python: Crie um servidor WebSocket simples em Python para receber os dados dos simuladores.
-Execute os scripts Python:
+Execução dos Simuladores:
 
-Execute cada script Python individualmente para simular o comportamento de um equipamento médico.
-Os dados serão enviados para o servidor WebSocket configurado.
-Execute o dashboard:
+python camaHospitalar.py
+python bombaInfusora.py
+# ... outros simuladores
+Acesso ao Dashboard: Abra um navegador web e acesse http://localhost:5000/ para visualizar o dashboard.
 
-Execute o script dash.py para iniciar o servidor Flask e exibir o dashboard.
-Acesse o endereço http://localhost:5000/ no navegador para visualizar o dashboard.
-Observações:
-
-Este projeto é um exemplo de simulação de equipamentos médicos e pode ser adaptado para outros cenários.
-Os dados simulados são aleatórios e não representam dados reais de equipamentos médicos.
-O projeto não inclui implementação de segurança ou autenticação.
-Próximos Passos:
-
-Implementar um servidor WebSocket mais robusto para receber os dados dos simuladores.
-Adicionar mais tipos de equipamentos médicos ao projeto.
-Implementar funcionalidades de análise e visualização de dados.
-Integrar o projeto com outras plataformas de saúde.
-Contribuições:
-
-Contribuições para este projeto são bem-vindas! Sinta-se à vontade para abrir issues, enviar pull requests ou entrar em contato com o autor.
+Próximos Passos
+Implementar persistência de dados para análise histórica.
+Adicionar mais tipos de equipamentos médicos e dados simulados.
+Implementar funcionalidades de controle e interação com os simuladores a partir do dashboard.
+Integrar com frameworks de front-end como React, Vue.js ou Angular para um dashboard mais dinâmico.
+Contribuições
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues, enviar pull requests ou entrar em contato com os autores.

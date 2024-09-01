@@ -10,27 +10,78 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 class VentiladorSimulator(QObject):
     data_updated = pyqtSignal(tuple)
 
+    """
+    Initializes a VentiladorSimulator instance.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def __init__(self):
         super().__init__()
         self.timer = None  # Inicialmente, o timer é None
         self.is_running = False
 
+    """
+    Configures the timer for the VentiladorSimulator instance.
+
+    Sets the interval to 1000 milliseconds and connects the timeout signal to the generate_data method.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def setup_timer(self):
         self.timer = QTimer(self)  # Crie o timer aqui
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.generate_data)
 
+    """
+    Starts the VentiladorSimulator instance.
+
+    If the timer is not set, it configures the timer before starting it.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def start(self):
         if self.timer is None:
             self.setup_timer()  # Configura o timer somente quando necessário
         self.is_running = True
         self.timer.start()  # Inicie o timer aqui
 
+    """
+    Stops the VentiladorSimulator instance.
+
+    Sets the is_running flag to False and stops the timer if it exists.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def stop(self):
         self.is_running = False
         if self.timer is not None:
             self.timer.stop()
 
+    """
+    Sends data to a WebSocket server.
+
+    Parameters:
+        data (tuple): The data to be sent to the WebSocket server.
+
+    Returns:
+        None
+    """
     async def send_data_websocket(self, data):
         device = 'VM'  # Define o nome do dispositivo
         uri = "ws://localhost:8080"
@@ -42,6 +93,21 @@ class VentiladorSimulator(QObject):
             data_bin = struct.pack(data_format, *data)
             await websocket.send(data_bin)
 
+    """
+    Generates random data and inserts it into a MySQL database.
+
+    This function generates random values for respiratory rate, tidal volume, inspiratory pressure,
+    fio2, ventilation mode, and alarms. It then creates a data batch containing the generated
+    data and the current timestamp. The function establishes a connection to a MySQL database,
+    retrieves the ID of the device, and inserts the data batch into the database. The function
+    also sends the generated data through a websocket and emits a signal with the updated data.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def generate_data(self):
         if not self.is_running:
             return

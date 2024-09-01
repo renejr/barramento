@@ -73,6 +73,7 @@ class MyWebSocketServer implements MessageComponentInterface {
         // echo "FiO2: $fio2\n";
 
         // TODO: Implemente a lógica para armazenar os dados (ex: banco de dados, arquivo, etc.)
+        $msg = utf8_encode($ventiladorData);
 
         foreach ($this->clients as $client) {
             if ($from !== $client) {
