@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ventilador Mecânico - Simulador</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="ventilador.css">
+</head>
+<body>
+    <div id="container">
+        <h1>Simulador de Ventilador Mecânico (<span id="device"></span>)</h1>
+
+        <div id="navbar">
+            <button id="btn-iniciar">Iniciar</button>
+            <button id="btn-pausar" disabled>Pausar</button>
+            <button id="btn-parar" disabled>Parar</button>
+            <button id="btn-sair">Sair</button>
+        </div>
+
+        <div id="graphs">
+            <div class="graph-container">
+                <canvas id="graph-rr"></canvas> 
+            </div>
+            <div class="graph-container">
+                <canvas id="graph-vc"></canvas> 
+            </div>
+            <div class="graph-container">
+                <canvas id="graph-pressure"></canvas> 
+            </div>
+            <div class="graph-container">
+                <canvas id="graph-fio2"></canvas> 
+            </div>
+        </div>
+
+        <div id="alarm-box" class="alarm-inactive">Sem Alarmes</div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="ventilador.js"></script>
+</body>
+</html>

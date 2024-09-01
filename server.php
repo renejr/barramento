@@ -18,10 +18,52 @@ class MyWebSocketServer implements MessageComponentInterface {
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
-        echo sprintf('Conexão %d enviou mensagem: %s' . "\n", $from->resourceId, $msg);
+        // Guarda a mensagem crua para debug, se necessário
+        // echo sprintf('Conexão %d enviou mensagem: %s' . "\n", $from->resourceId, bin2hex($msg)); 
 
-        // Aqui você pode processar a mensagem recebida (JSON, XML, etc.)
-        // Pode ser um dado de sinal vital, comando, alerta, etc.
+        // Decodifica a mensagem binária
+        $data = unpack("a2device/fRR/fVC/fPIns/ffio2/a*resto", $msg);
+
+        // Manipula os dados recebidos
+        $device = trim($data['device']); // Remove espaços extras
+        $respiratoryRate = $data['RR'];
+        $tidalVolume = $data['VC'];
+        $inspiratoryPressure = $data['PIns'];
+        $fio2 = $data['fio2'];
+        $alarms = $data['resto'];
+
+
+        // Cria um array associativo com os dados
+        $ventiladorData = [
+            "device" => $device,
+            "RR" => $respiratoryRate,
+            "VC" => $tidalVolume,
+            "PIns" => $inspiratoryPressure,
+            "fio2" => $fio2,
+            "alarms" => $alarms,
+            // ... adicione outros dados conforme necessário
+        ];
+
+        //print_r($ventiladorData);
+        //echo "\n";
+
+        // Salva os dados no arquivo JSON
+        $dataFile = 'ventilador_data.json';
+
+        // Converte ventiladorData para JSON
+        $ventiladorDataJson = json_encode($ventiladorData);
+
+        // Verifica o diretório atual
+        echo "Diretório atual: " . getcwd() . "\n";
+
+        // Grava o JSON no arquivo
+        $result = file_put_contents($dataFile, $ventiladorDataJson);
+
+        if ($result !== false) {
+            echo "Dados gravados com sucesso em $dataFile\n";
+        } else {
+            echo "Erro ao gravar os dados no arquivo $dataFile\n";
+        }
 
         foreach ($this->clients as $client) {
             if ($from !== $client) {
@@ -54,5 +96,5 @@ $server = \Ratchet\Server\IoServer::factory(
     ),
     8080
 );
-
+echo "Servidor WebSocket iniciado na porta 8080.\n";
 $server->run();

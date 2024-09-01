@@ -1,12 +1,33 @@
 import sys
-import time
-import struct
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout, QMessageBox, QStyleFactory
-from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
-from PyQt5.QtGui import QFont, QPalette
-import pyqtgraph as pg  # Importe o pyqtgraph para gráficos
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout, QMessageBox
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QObject
+import pyqtgraph as pg
 
 from ventiladorMecanico import VentiladorSimulator  # Importe a classe do simulador
+
+class Worker(QObject):
+    data_updated = pyqtSignal(tuple)
+    start_simulator = pyqtSignal()
+    stop_simulator = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.simulator = VentiladorSimulator()
+        self.simulator.data_updated.connect(self.data_updated.emit)
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.simulator.generate_data)
+        self.start_simulator.connect(self.start)
+        self.stop_simulator.connect(self.stop)
+
+    def start(self):
+        self.simulator.is_running = True
+        self.timer.start()
+
+    def stop(self):
+        self.simulator.is_running = False
+        self.timer.stop()
+
 
 class VentiladorGUI(QMainWindow):
     def __init__(self):
@@ -18,14 +39,13 @@ class VentiladorGUI(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
-        self.simulator = VentiladorSimulator()
-        #self.simulator_thread = None
+        self.simulator_thread = QThread()
+        self.worker = Worker()
+        self.worker.moveToThread(self.simulator_thread)
+        self.worker.data_updated.connect(self.update_data)
+        self.simulator_thread.start()
 
         self.paused = False  # Variável de controle de pausa
-        self.simulator_thread = QThread()  # Crie a thread aqui
-        self.simulator.moveToThread(self.simulator_thread)
-        self.simulator_thread.started.connect(self.simulator.generate_data)
-        self.simulator.data_updated.connect(self.update_data)
 
         self.init_ui()
 
@@ -54,9 +74,8 @@ class VentiladorGUI(QMainWindow):
         self.btn_pause.setEnabled(False)  # Começa desabilitado
         navbar_layout.addWidget(self.btn_pause)
 
-        self.btn_gravar = QPushButton("Gravar")
-        #self.btn_gravar.clicked.connect(self.gravar)
-        navbar_layout.addWidget(self.btn_gravar)
+        # self.btn_gravar = QPushButton("Gravar")
+        # navbar_layout.addWidget(self.btn_gravar)
 
         self.btn_stop = QPushButton("Parar")
         self.btn_stop.clicked.connect(self.stop_simulation)
@@ -67,8 +86,7 @@ class VentiladorGUI(QMainWindow):
         self.btn_exit.clicked.connect(self.close_application)
         navbar_layout.addWidget(self.btn_exit)
 
-    # -- Folha de Estilo para o Botão "Iniciar" --
-        start_button_style = """
+        self.btn_start.setStyleSheet("""
         QPushButton {
             background-color: lightgreen; 
             font-weight: bold; 
@@ -79,10 +97,8 @@ class VentiladorGUI(QMainWindow):
             font-weight: bold;
             color: white;
         }
-        """
-    
-    # -- Folha de Estilo para o Botão "Pausar" --
-        pause_button_style = """
+        """)
+        self.btn_pause.setStyleSheet("""
         QPushButton {
             background-color: lightblue; 
             font-weight: bold; 
@@ -93,24 +109,9 @@ class VentiladorGUI(QMainWindow):
             font-weight: bold;
             color: white;
         }
-        """    
-
-    # -- Folha de Estilo para o Botão "Gravar" --
-        gravar_button_style = """
-        QPushButton {
-            background-color: lightyellow; 
-            font-weight: bold; 
-            color: black;
-        }
-        QPushButton:hover {
-            background-color: yellow;
-            font-weight: bold;
-            color: black;
-        }
-        """
-   
-    # -- Folha de Estilo para o Botão "Parar" --
-        stop_button_style = """
+        """)
+        
+        self.btn_stop.setStyleSheet("""
         QPushButton {
             background-color: darkred; 
             font-weight: bold; 
@@ -121,10 +122,8 @@ class VentiladorGUI(QMainWindow):
             font-weight: bold;
             color: black;
         }
-        """
-
-    # -- Folha de Estilo para o Botão "Sair" --
-        exit_button_style = """
+        """)
+        self.btn_exit.setStyleSheet("""
         QPushButton {
             background-color: lightgray; 
             font-weight: bold; 
@@ -135,15 +134,7 @@ class VentiladorGUI(QMainWindow):
             font-weight: bold;
             color: white;
         }
-        """
-
-        self.btn_start.setStyleSheet(start_button_style)  # Aplica a folha de estilo
-        self.btn_pause.setStyleSheet(pause_button_style)  # Aplica a folha de estilo
-        self.btn_gravar.setStyleSheet(gravar_button_style)  # Aplica a folha de estilo
-        self.btn_stop.setStyleSheet(stop_button_style)  # Aplica a folha de estilo
-        self.btn_exit.setStyleSheet(exit_button_style)  # Aplica a folha de estilo
-
-        # ... (adicione botões para Gravar e Sair) ...
+        """)
 
         layout.addLayout(navbar_layout, 0, 0, 1, 2)  # Adiciona a barra de navegação
 
@@ -174,43 +165,63 @@ class VentiladorGUI(QMainWindow):
         # Adicionando os gráficos ao layout em duas linhas:
         layout.addWidget(self.graph_widget, 1, 0, 2, 2)  # Gráficos ocupam 2 linhas e 2 colunas
 
-
     def create_alarm_box(self, layout):
-            self.alarm_label = QLabel("Sem Alarmes")
-            self.alarm_label.setStyleSheet("background-color: lightgreen; font-size: 16px; padding: 10px;")
-            self.alarm_label.setAlignment(Qt.AlignCenter)
-            layout.addWidget(self.alarm_label, 3, 0, 1, 2)  # Caixa de alarmes na quarta linha
+        self.alarm_label = QLabel("Sem Alarmes")
+        self.alarm_label.setStyleSheet("background-color: lightgreen; font-size: 16px; padding: 10px;")
+        self.alarm_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.alarm_label, 3, 0, 1, 2)  # Caixa de alarmes na quarta linha
 
     def start_simulation(self):
-        if not self.simulator_thread.isRunning():  # Verifica se a thread já está em execução
-            self.simulator.start()
+        # Verifica se a thread já foi criada
+        if not hasattr(self, 'simulator_thread'):
+            print("Criando e iniciando a thread...")
+            self.simulator_thread = QThread()
+            self.worker = Worker()
+            self.worker.moveToThread(self.simulator_thread)
+            self.worker.data_updated.connect(self.update_data)
             self.simulator_thread.start()
+            self.worker.start_simulator.emit()  # Emite o sinal para iniciar a simulação
+        else:
+            # Se a thread já existe, apenas emite o sinal para iniciar
+            print("Thread já existe, iniciando a simulação...")
+            self.worker.start_simulator.emit()
 
-            self.btn_start.setEnabled(False)
-            self.btn_pause.setEnabled(True)
-            self.btn_stop.setEnabled(True)
+    # Limpa os dados dos gráficos antes de iniciar a simulação
+        self.data_rr.clear() 
+        self.data_vc.clear()
+        self.data_pressure.clear()
+        self.data_fio2.clear()
 
+    # Atualiza os gráficos para mostrar que estão vazios
+        self.curve_rr.setData(self.data_rr)
+        self.curve_vc.setData(self.data_vc)
+        self.curve_pressure.setData(self.data_pressure)
+        self.curve_fio2.setData(self.data_fio2)
+
+        self.btn_start.setEnabled(False)
+        self.btn_pause.setEnabled(True)
+        self.btn_stop.setEnabled(True)
         self.paused = False
 
     def stop_simulation(self):
-            self.simulator.stop()
-            if self.simulator_thread.isRunning():
-                self.simulator_thread.quit()
-                self.simulator_thread.wait()  # Aguarda a thread terminar
+        self.worker.stop_simulator.emit()  # Emite o sinal para parar a simulação
+        if self.simulator_thread.isRunning():
+            self.simulator_thread.quit()
+            self.simulator_thread.wait()  # Aguarda a thread terminar
 
-            self.btn_start.setEnabled(True)
-            self.btn_pause.setEnabled(False)
-            self.btn_stop.setEnabled(False)
+        self.btn_start.setEnabled(True)
+        self.btn_pause.setEnabled(False)
+        self.btn_stop.setEnabled(False)
 
     def pause_simulation(self):
-            if not self.paused:
-                self.simulator.stop()
-                self.btn_pause.setText("Continuar")
-                self.paused = True
-            else:
-                self.simulator.start()
-                self.btn_pause.setText("Pausar")
-                self.paused = False
+        if not self.paused:
+            self.worker.stop_simulator.emit()  # Emite o sinal para parar a simulação
+            self.btn_pause.setText("Continuar")
+            self.paused = True
+        else:
+            self.worker.start_simulator.emit()  # Emite o sinal para continuar a simulação
+            self.btn_pause.setText("Pausar")
+            self.paused = False
 
     def update_data(self, data):
         # Desempacota os dados recebidos
@@ -220,10 +231,8 @@ class VentiladorGUI(QMainWindow):
         self.data_rr.append(respiratory_rate)
         self.curve_rr.setData(self.data_rr)
 
-        # ... (atualize os outros gráficos) ...
-
         # Atualiza o gráfico do Volume Corrente
-        self.data_vc.append(tidal_volume) 
+        self.data_vc.append(tidal_volume)
         self.curve_vc.setData(self.data_vc)
 
         # Atualiza o gráfico da Pressão Inspiratória
@@ -242,8 +251,9 @@ class VentiladorGUI(QMainWindow):
             self.alarm_label.setStyleSheet("background-color: lightgreen; font-size: 16px; padding: 10px;")
 
     def close_application(self):
-            self.close()
-            
+        self.close()
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = VentiladorGUI()

@@ -1,38 +1,124 @@
 import random
 import time
+import asyncio
+import websockets
 import struct
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer  # Importe QTimer aqui
+import pymysql
+from datetime import datetime
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 
 class VentiladorSimulator(QObject):
-    data_updated = pyqtSignal(tuple)  # Sinal para enviar dados para a GUI
+    data_updated = pyqtSignal(tuple)
 
+    """
+    Initializes a VentiladorSimulator instance.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def __init__(self):
         super().__init__()
-        self.timer = QTimer()  # Agora você pode usar QTimer
-        self.timer.setInterval(1000)  # Atualiza a cada 1 segundo
-        self.timer.timeout.connect(self.generate_data)
+        self.timer = None  # Inicialmente, o timer é None
         self.is_running = False
 
-    def start(self):
-        self.is_running = True
-        self.timer.start()
+    """
+    Configures the timer for the VentiladorSimulator instance.
 
+    Sets the interval to 1000 milliseconds and connects the timeout signal to the generate_data method.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
+    def setup_timer(self):
+        self.timer = QTimer(self)  # Crie o timer aqui
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.generate_data)
+
+    """
+    Starts the VentiladorSimulator instance.
+
+    If the timer is not set, it configures the timer before starting it.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
+    def start(self):
+        if self.timer is None:
+            self.setup_timer()  # Configura o timer somente quando necessário
+        self.is_running = True
+        self.timer.start()  # Inicie o timer aqui
+
+    """
+    Stops the VentiladorSimulator instance.
+
+    Sets the is_running flag to False and stops the timer if it exists.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def stop(self):
         self.is_running = False
-        self.timer.stop()
+        if self.timer is not None:
+            self.timer.stop()
 
+    """
+    Sends data to a WebSocket server.
+
+    Parameters:
+        data (tuple): The data to be sent to the WebSocket server.
+
+    Returns:
+        None
+    """
+    async def send_data_websocket(self, data):
+        device = 'VM'  # Define o nome do dispositivo
+        uri = "ws://localhost:8080"
+        async with websockets.connect(uri) as websocket:
+            # Calcula o tamanho da string do device CORRIGIDO
+            device_size = len(device)  
+            # Define o formato incluindo o tamanho do device
+            data_format = f'{device_size}sffff{len(data[5])}s{len(data[6])}sQ'  
+            data_bin = struct.pack(data_format, *data)
+            await websocket.send(data_bin)
+
+    """
+    Generates random data and inserts it into a MySQL database.
+
+    This function generates random values for respiratory rate, tidal volume, inspiratory pressure,
+    fio2, ventilation mode, and alarms. It then creates a data batch containing the generated
+    data and the current timestamp. The function establishes a connection to a MySQL database,
+    retrieves the ID of the device, and inserts the data batch into the database. The function
+    also sends the generated data through a websocket and emits a signal with the updated data.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     def generate_data(self):
         if not self.is_running:
             return
-
-        # -- Dados do Ventilador --
+        
         respiratory_rate = random.uniform(10, 30)
         tidal_volume = random.uniform(300, 600)
         inspiratory_pressure = random.uniform(10, 40)
         fio2 = random.uniform(0.21, 1.0)
         ventilation_mode = random.choice(["VCV", "PCV", "PSV"])
+        device = 'VM'  # Define o nome do dispositivo
 
-        # -- Lógica de Alarmes --
         alarms = []
         if respiratory_rate > 25:
             alarms.append("FR Alta")
@@ -45,21 +131,68 @@ class VentiladorSimulator(QObject):
         if inspiratory_pressure < 5:
             alarms.append("PIns Baixa")
 
-        alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes" # Mova esta linha para cá!
+        alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes"
 
-        # -- Microtimestamp --
         microtimestamp = int(time.time() * 1000)
 
-        # -- Empacotamento de Dados (opcional) --
-        # dataBin = struct.pack(f'ffffsI{alarm_size}sQ', 
-        #                      respiratory_rate, 
-        #                      tidal_volume, 
-        #                      inspiratory_pressure, 
-        #                      fio2, 
-        #                      ventilation_mode.encode('utf-8'),
-        #                      alarm_size,
-        #                      alarm_bytes,
-        #                      microtimestamp)
+        # Convert microtimestamp to seconds
+        timestamp_seconds = microtimestamp / 1000
 
-        # Envie os dados para a interface gráfica
-        self.data_updated.emit((respiratory_rate, tidal_volume, inspiratory_pressure, fio2, ventilation_mode, alarm_string, microtimestamp))
+        # Convert to datetime object
+        datetime_object = datetime.fromtimestamp(timestamp_seconds)
+
+        # Format datetime object for MySQL
+        formatted_timestamp = datetime_object.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Dados de exemplo
+        data_batch = [
+            {'device': device, 'data': {'rr': respiratory_rate, 'vc': tidal_volume, 'pi': inspiratory_pressure, 'fio2': fio2, 'mode': ventilation_mode, 'alarms': alarm_string, 'timestamp': microtimestamp}},
+        ]        
+
+        # Conexão com o banco de dados
+        mydb = pymysql.connect(
+            host="localhost",
+            port=3307,
+            user="root",
+            password="",
+            database="barramento"
+        )
+
+        cursor = mydb.cursor()
+
+        # Busco o ID do dispositivo
+        sql = "SELECT id FROM equipamentos WHERE sigla = '" + device + "' LIMIT 1"
+        cursor.execute(sql)
+        device_id = cursor.fetchone()[0]
+
+        # print('sql: ' + sql)
+
+        # Query de inserção em lote
+        sql = "INSERT INTO telemetria (equipamentoID, timestamp, device, DATA) VALUES (%s, %s, %s, JSON_OBJECT('rr', %s, 'vc', %s, 'pi', %s, 'fio2', %s, 'mode', %s, 'alarms', %s, 'timestamp', %s))"
+        cursor.executemany(sql, [(device_id, formatted_timestamp, data['device'], data['data']['rr'], data['data']['vc'], data['data']['pi'], data['data']['fio2'], data['data']['mode'], data['data']['alarms'], data['data']['timestamp']) for data in data_batch])
+
+        mydb.commit()
+        cursor.close()
+        mydb.close()
+
+        print("Dados inseridos com sucesso!")
+
+        # print(sql)
+
+        asyncio.run(self.send_data_websocket((
+                                            device.encode('utf-8'), # Inclui o device no envio
+                                            respiratory_rate,
+                                            tidal_volume,
+                                            inspiratory_pressure,
+                                            fio2,
+                                            ventilation_mode.encode('utf-8'),
+                                            alarm_string.encode('utf-8'),
+                                            microtimestamp)))
+
+        self.data_updated.emit((respiratory_rate,
+                                tidal_volume,
+                                inspiratory_pressure,
+                                fio2,
+                                ventilation_mode,
+                                alarm_string,
+                                microtimestamp))
