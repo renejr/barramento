@@ -74,8 +74,8 @@ class VentiladorGUI(QMainWindow):
         self.btn_pause.setEnabled(False)  # Começa desabilitado
         navbar_layout.addWidget(self.btn_pause)
 
-        self.btn_gravar = QPushButton("Gravar")
-        navbar_layout.addWidget(self.btn_gravar)
+        # self.btn_gravar = QPushButton("Gravar")
+        # navbar_layout.addWidget(self.btn_gravar)
 
         self.btn_stop = QPushButton("Parar")
         self.btn_stop.clicked.connect(self.stop_simulation)
@@ -110,18 +110,7 @@ class VentiladorGUI(QMainWindow):
             color: white;
         }
         """)
-        self.btn_gravar.setStyleSheet("""
-        QPushButton {
-            background-color: lightyellow; 
-            font-weight: bold; 
-            color: black;
-        }
-        QPushButton:hover {
-            background-color: yellow;
-            font-weight: bold;
-            color: black;
-        }
-        """)
+        
         self.btn_stop.setStyleSheet("""
         QPushButton {
             background-color: darkred; 
