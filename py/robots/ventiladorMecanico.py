@@ -3,6 +3,8 @@ import time
 import asyncio
 import websockets
 import struct
+import pymysql
+from datetime import datetime
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 
 class VentiladorSimulator(QObject):
@@ -66,6 +68,50 @@ class VentiladorSimulator(QObject):
         alarm_string = ', '.join(alarms) if alarms else "Sem Alarmes"
 
         microtimestamp = int(time.time() * 1000)
+
+        # Convert microtimestamp to seconds
+        timestamp_seconds = microtimestamp / 1000
+
+        # Convert to datetime object
+        datetime_object = datetime.fromtimestamp(timestamp_seconds)
+
+        # Format datetime object for MySQL
+        formatted_timestamp = datetime_object.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Dados de exemplo
+        data_batch = [
+            {'device': device, 'data': {'rr': respiratory_rate, 'vc': tidal_volume, 'pi': inspiratory_pressure, 'fio2': fio2, 'mode': ventilation_mode, 'alarms': alarm_string, 'timestamp': microtimestamp}},
+        ]        
+
+        # Conexão com o banco de dados
+        mydb = pymysql.connect(
+            host="localhost",
+            port=3307,
+            user="root",
+            password="",
+            database="barramento"
+        )
+
+        cursor = mydb.cursor()
+
+        # Busco o ID do dispositivo
+        sql = "SELECT id FROM equipamentos WHERE sigla = '" + device + "' LIMIT 1"
+        cursor.execute(sql)
+        device_id = cursor.fetchone()[0]
+
+        # print('sql: ' + sql)
+
+        # Query de inserção em lote
+        sql = "INSERT INTO telemetria (equipamentoID, timestamp, device, DATA) VALUES (%s, %s, %s, JSON_OBJECT('rr', %s, 'vc', %s, 'pi', %s, 'fio2', %s, 'mode', %s, 'alarms', %s, 'timestamp', %s))"
+        cursor.executemany(sql, [(device_id, formatted_timestamp, data['device'], data['data']['rr'], data['data']['vc'], data['data']['pi'], data['data']['fio2'], data['data']['mode'], data['data']['alarms'], data['data']['timestamp']) for data in data_batch])
+
+        mydb.commit()
+        cursor.close()
+        mydb.close()
+
+        print("Dados inseridos com sucesso!")
+
+        # print(sql)
 
         asyncio.run(self.send_data_websocket((
                                             device.encode('utf-8'), # Inclui o device no envio

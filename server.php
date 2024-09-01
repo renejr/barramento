@@ -65,8 +65,6 @@ class MyWebSocketServer implements MessageComponentInterface {
             echo "Erro ao gravar os dados no arquivo $dataFile\n";
         }
 
-
-
         // Imprime os dados decodificados (apenas para debug)
         // echo "Device: $device\n";
         // echo "Frequência Respiratória: $respiratoryRate\n";
