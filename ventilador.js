@@ -9,7 +9,7 @@ $(document).ready(function() {
     const maxDataPoints = 50;
 
     // Criação do gráfico Chart.js (APENAS UMA VEZ)
-    console.log(' graphData.rrValues = '+graphData.rrValues);
+    // console.log(' graphData.rrValues = '+graphData.rrValues);
 
     var ctx = document.getElementById('graph-rr').getContext('2d');
     var myChart = new Chart(ctx, { // Agora 'Chart' deve ser encontrado
@@ -38,7 +38,7 @@ $(document).ready(function() {
     
     // Função para atualizar o gráfico com novos dados
     function updateChart(chart, newData) {
-        console.log(' updateChart() newData = '+newData);
+        // console.log(' updateChart() newData = '+newData);
         chart.data.labels.push(newData.label); 
         chart.data.datasets[0].data.push(newData.value); 
 
@@ -57,19 +57,20 @@ $(document).ready(function() {
             dataType: "json",
             success: function(data) {
                 // ... (atualiza os elementos de texto) ...
-
                 $("#device").html(data.device);
 
-                // ... dentro da função success do AJAX ...
+            // Itere sobre as propriedades do objeto 'data'
+            for (let chave in data) {
+                console.log(chave + ": " + data[chave]);
+                console.log(typeof data[chave]);
+            }
 
-                //if (typeof data.respiratory_rate === 'number' && !isNaN(data.respiratory_rate)) {
-                    // Atualiza o gráfico apenas se o valor for um número válido
-                    updateChart(myChart, {
+            // ... dentro da função success do AJAX ...
+                // Atualiza o gráfico apenas se o valor for um número válido
+                updateChart(myChart, {
                     label: new Date().toLocaleTimeString(), 
-                    value: data.respiratory_rate 
-                    });
-                //}
-  
+                    value: data.respiratory_rate
+                });
             },
             error: function() {
                 console.error("Erro ao buscar dados do ventilador.");
@@ -78,7 +79,6 @@ $(document).ready(function() {
     }
 
     // ... (lógica para os botões) ...
-
 
     // Atualiza os dados a cada segundo
     setInterval(updateData, 1000); 

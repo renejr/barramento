@@ -1,33 +1,41 @@
 import asyncio
-import websockets
-import struct
 import random
+from PyQt5.QtCore import QObject, pyqtSignal
 
-async def simulate_multi_parameter_monitor():
-    while True:
-        # Simulando sinais vitais:
-        heart_rate = random.uniform(60, 100)  # Frequência cardíaca em bpm
-        systolic_bp = random.uniform(100, 140)  # Pressão arterial sistólica em mmHg
-        diastolic_bp = random.uniform(60, 90)  # Pressão arterial diastólica em mmHg
-        oxygen_saturation = random.uniform(95, 100)  # Saturação de oxigênio em %
-        body_temperature = random.uniform(36.5, 37.5)  # Temperatura corporal em Celsius
-        respiratory_rate = random.uniform(12, 20)  # Frequência respiratória em rpm
+class MonitorSimulator(QObject):  # Herdando de QObject para usar sinais
+    data_updated = pyqtSignal(dict)  # Sinal para enviar os dados
 
-        data = {
-            "heart_rate": heart_rate,
-            "systolic_bp": systolic_bp,
-            "diastolic_bp": diastolic_bp,
-            "oxygen_saturation": oxygen_saturation,
-            "body_temperature": body_temperature,
-            "respiratory_rate": respiratory_rate
-        }
+    def __init__(self):
+        super().__init__()
+        self.is_running = False
 
-        print(data)
+    async def simulate(self):
+        while self.is_running:
+            # Simulando sinais vitais:
+            heart_rate = random.uniform(50, 110)
+            systolic_bp = random.uniform(80, 150)
+            diastolic_bp = random.uniform(50, 100)
+            oxygen_saturation = random.uniform(90, 100)
+            body_temperature = random.uniform(35.0, 38.0)
+            respiratory_rate = random.uniform(10, 25)
 
-        # print(f"Enviado: FC = {heart_rate:.2f} bpm, PA Sistólica = {systolic_bp:.2f} mmHg, PA Diastólica = {diastolic_bp:.2f} mmHg, Sat. O2 = {oxygen_saturation:.2f}%, Temp. = {body_temperature:.2f}°C, FR = {respiratory_rate:.2f} rpm")
+            data = {
+                "heart_rate": heart_rate,
+                "systolic_bp": systolic_bp,
+                "diastolic_bp": diastolic_bp,
+                "oxygen_saturation": oxygen_saturation,
+                "body_temperature": body_temperature,
+                "respiratory_rate": respiratory_rate
+            }
 
-        # Aguardar 1 segundo antes de enviar novos dados
-        await asyncio.sleep(1)
+            # Emitindo o sinal com os dados
+            self.data_updated.emit(data) 
 
-# Executando o simulador de Monitor Multiparâmetro
-asyncio.run(simulate_multi_parameter_monitor())
+            await asyncio.sleep(1)
+
+    def start(self):
+        self.is_running = True
+        asyncio.run(self.simulate())
+
+    def stop(self):
+        self.is_running = False
