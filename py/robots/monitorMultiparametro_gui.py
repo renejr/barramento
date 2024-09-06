@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QProgressBar, QVBoxLayout, QGridLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton
 from PyQt5.QtCore import Qt, QThread
 from monitorMultiparametro import MonitorSimulator  # Importe a classe do simulador
 
@@ -21,9 +21,11 @@ class MonitorGUI(QMainWindow):
         self.simulator.data_updated.connect(self.update_data)
         self.simulator_thread.started.connect(self.simulator.start) 
 
-        # Inicialize data_labels e progress_bars aqui
+        # Initialize data_labels, progress_bars, and alert_labels here
         self.data_labels = {}
-        self.progress_bars = {}
+        self.alert_labels = {}  # Add this line to initialize alert_labels
+
+        self.paused = False  # Variável de controle de pausa
 
         self.init_ui()
 
@@ -62,14 +64,14 @@ class MonitorGUI(QMainWindow):
         label = QLabel(label_text)
         vbox.addWidget(label)
 
-        # Não é mais necessário inicializar data_labels e progress_bars aqui
         self.data_labels[data_key] = QLabel("0")
         self.data_labels[data_key].setAlignment(Qt.AlignCenter)
         vbox.addWidget(self.data_labels[data_key])
 
-        self.progress_bars[data_key] = QProgressBar()
-        self.progress_bars[data_key].setRange(0, 100)
-        vbox.addWidget(self.progress_bars[data_key])
+        # Crie um QLabel para a mensagem de alerta
+        self.alert_labels[data_key] = QLabel("Sem Alarmes") 
+        self.alert_labels[data_key].setAlignment(Qt.AlignCenter)
+        vbox.addWidget(self.alert_labels[data_key])
 
         layout.addLayout(vbox, row, col)
 
@@ -82,14 +84,28 @@ class MonitorGUI(QMainWindow):
         self.data_labels["body_temperature"].setText(f"{data['body_temperature']:.2f}")
         self.data_labels["respiratory_rate"].setText(f"{data['respiratory_rate']:.2f}")
 
-        # Lógica da barra de progresso (FAZER PARA CADA SINAL VITAL):
-        self.update_progress_bar("heart_rate", data['heart_rate'], 60, 100)
-        self.update_progress_bar("systolic_bp", data['systolic_bp'], 90, 140)
-        # ... (Implementar lógica para os outros sinais vitais)
+        self.alert_labels["heart_rate"].setText(self.check_alarms("heart_rate", data['heart_rate'], 50, 110))
+        self.alert_labels["systolic_bp"].setText(self.check_alarms("systolic_bp", data['systolic_bp'], 90, 140))
+        self.alert_labels["diastolic_bp"].setText(self.check_alarms("diastolic_bp", data['diastolic_bp'], 50, 100))
+        self.alert_labels["oxygen_saturation"].setText(self.check_alarms("oxygen_saturation", data['oxygen_saturation'], 90, 100))
+        self.alert_labels["body_temperature"].setText(self.check_alarms("body_temperature", data['body_temperature'], 35.0, 38.0))
+        self.alert_labels["respiratory_rate"].setText(self.check_alarms("respiratory_rate", data['respiratory_rate'], 10, 25))
 
-    def update_progress_bar(self, data_key, value, min_limit, max_limit):
-        # ... (mesmo código do update_progress_bar anterior)
-        pass  # Implemente a lógica da barra de progresso aqui
+        # ... (Repetir para outros sinais vitais)
+
+    def check_alarms(self, data_key, value, min_limit, max_limit):
+        print(data_key, value, min_limit, max_limit)
+
+        # Código de verificação de alertas
+        if value < min_limit:
+            self.alert_labels[data_key].setStyleSheet("background-color: lightcoral; font-size: 16px; padding: 10px;")
+            return f"{data_key.upper()} BAIXO!"
+        elif value > max_limit:
+            self.alert_labels[data_key].setStyleSheet("background-color: lightcoral; font-size: 16px; padding: 10px;")
+            return f"{data_key.upper()} ALTO!"
+        else:
+            self.alert_labels[data_key].setStyleSheet("background-color: lightgreen; font-size: 16px; padding: 10px;")
+            return "Sem Alarmes"
 
     def start_simulation(self):
         self.simulator_thread.start()
@@ -106,8 +122,15 @@ class MonitorGUI(QMainWindow):
         self.btn_stop.setEnabled(False)
 
     def pause_simulation(self):
-        # Lógica para pausar/retomar a simulação (ainda a ser implementada)
-        pass 
+        if not self.paused:
+            self.simulator.stop()  # Pause the simulator
+            self.btn_pause.setText("Continuar")
+            self.paused = True
+        else:
+            self.simulator.start()  # Resume the simulator
+            self.btn_pause.setText("Pausar")
+            self.paused = False
+ 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
