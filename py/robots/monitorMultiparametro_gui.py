@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLay
 from PyQt5.QtCore import Qt, QThread
 from PyQt5.QtCore import QObject, pyqtSignal  # Import QObject and pyqtSignal
 from monitorMultiparametro import MonitorSimulator  # Importe a classe do simulador
+import pyqtgraph as pg  # Importe a biblioteca pyqtgraph
 
 class Worker(QObject):
     data_updated = pyqtSignal(dict)
@@ -46,6 +47,10 @@ class MonitorGUI(QMainWindow):
         self.alert_labels = {}  # Add this line to initialize alert_labels
 
         self.paused = False  # Variável de controle de pausa
+
+        self.data_plots = {}  # Dicionário para armazenar os plots
+        self.data_history = {}  # Dicionário para armazenar histórico de dados
+        self.max_data_points = 100  # Número máximo de pontos nos gráficos
 
         self.init_ui()
 
@@ -134,6 +139,12 @@ class MonitorGUI(QMainWindow):
         label = QLabel(label_text)
         vbox.addWidget(label)
 
+        # Crie um widget PlotWidget para o gráfico
+        plot_widget = pg.PlotWidget()
+        self.data_plots[data_key] = plot_widget.plot(pen='b')  # Crie a curva
+        self.data_history[data_key] = []  # Inicialize a lista de histórico
+        vbox.addWidget(plot_widget)
+
         self.data_labels[data_key] = QLabel("0")
         self.data_labels[data_key].setAlignment(Qt.AlignCenter)
         vbox.addWidget(self.data_labels[data_key])
@@ -161,7 +172,12 @@ class MonitorGUI(QMainWindow):
         self.alert_labels["body_temperature"].setText(self.check_alarms("body_temperature", data['body_temperature'], 35.0, 38.0))
         self.alert_labels["respiratory_rate"].setText(self.check_alarms("respiratory_rate", data['respiratory_rate'], 10, 25))
 
-        # ... (Repetir para outros sinais vitais)
+        ## Atualize os gráficos
+        for data_key in data:
+            self.data_history[data_key].append(data[data_key])
+            if len(self.data_history[data_key]) > self.max_data_points:
+                self.data_history[data_key] = self.data_history[data_key][-self.max_data_points:]
+            self.data_plots[data_key].setData(self.data_history[data_key])
 
     def check_alarms(self, data_key, value, min_limit, max_limit):
         print(data_key, value, min_limit, max_limit)
@@ -182,6 +198,11 @@ class MonitorGUI(QMainWindow):
             self.simulator_thread.start()
         else:
             self.worker.start_simulator.emit()
+
+        # Limpa os dados dos gráficos antes de iniciar a simulação
+        for data_key in self.data_history:
+            self.data_history[data_key].clear()
+            self.data_plots[data_key].setData(self.data_history[data_key])
 
         self.btn_start.setEnabled(False)
         self.btn_pause.setEnabled(True)
