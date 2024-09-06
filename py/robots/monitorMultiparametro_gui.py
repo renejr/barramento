@@ -1,7 +1,27 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton
 from PyQt5.QtCore import Qt, QThread
+from PyQt5.QtCore import QObject, pyqtSignal  # Import QObject and pyqtSignal
 from monitorMultiparametro import MonitorSimulator  # Importe a classe do simulador
+
+class Worker(QObject):
+    data_updated = pyqtSignal(dict)
+    start_simulator = pyqtSignal()
+    stop_simulator = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.simulator = MonitorSimulator()
+        self.simulator.data_updated.connect(self.data_updated.emit)
+        self.start_simulator.connect(self.start)
+        self.stop_simulator.connect(self.stop)
+
+    def start(self):
+        self.simulator.is_running = True
+        self.simulator.simulate_data()
+
+    def stop(self):
+        self.simulator.is_running = False
 
 class MonitorGUI(QMainWindow):
     def __init__(self):
@@ -15,11 +35,11 @@ class MonitorGUI(QMainWindow):
 
         # Criando a thread do simulador
         self.simulator_thread = QThread()
-        self.simulator = MonitorSimulator()
-        self.simulator.moveToThread(self.simulator_thread)
+        self.worker = Worker()
+        self.worker.moveToThread(self.simulator_thread)
         # Conectando o sinal aos slots
-        self.simulator.data_updated.connect(self.update_data)
-        self.simulator_thread.started.connect(self.simulator.start) 
+        self.worker.data_updated.connect(self.update_data)
+        self.simulator_thread.started.connect(self.worker.start)
 
         # Initialize data_labels, progress_bars, and alert_labels here
         self.data_labels = {}
@@ -58,6 +78,56 @@ class MonitorGUI(QMainWindow):
         self.btn_exit = QPushButton("Sair", self)
         self.btn_exit.clicked.connect(self.close)
         grid_layout.addWidget(self.btn_exit, 4, 1)
+
+        # Estilizando os botões
+        self.btn_start.setStyleSheet("""
+            QPushButton {
+                background-color: lightgreen; 
+                font-weight: bold; 
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: darkgreen;
+                font-weight: bold;
+                color: white;
+            }
+        """)
+        self.btn_pause.setStyleSheet("""
+            QPushButton {
+                background-color: lightblue; 
+                font-weight: bold; 
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: darkblue;
+                font-weight: bold;
+                color: white;
+            }
+        """)
+        self.btn_stop.setStyleSheet("""
+            QPushButton {
+                background-color: darkred; 
+                font-weight: bold; 
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: red;
+                font-weight: bold;
+                color: black;
+            }
+        """)
+        self.btn_exit.setStyleSheet("""
+            QPushButton {
+                background-color: lightgray; 
+                font-weight: bold; 
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: darkgray;
+                font-weight: bold;
+                color: white;
+            }
+        """)
 
     def create_vital_sign_box(self, label_text, data_key, layout, row, col):
         vbox = QVBoxLayout()
@@ -108,30 +178,39 @@ class MonitorGUI(QMainWindow):
             return "Sem Alarmes"
 
     def start_simulation(self):
-        self.simulator_thread.start()
+        if not self.simulator_thread.isRunning():
+            self.simulator_thread.start()
+        else:
+            self.worker.start_simulator.emit()
+
         self.btn_start.setEnabled(False)
         self.btn_pause.setEnabled(True)
         self.btn_stop.setEnabled(True)
+        self.paused = False
 
     def stop_simulation(self):
-        self.simulator.stop()
-        self.simulator_thread.quit()  # Encerra a thread
-        self.simulator_thread.wait()  # Aguarda a thread finalizar
+        self.worker.stop_simulator.emit()
+        if self.simulator_thread.isRunning():
+            self.simulator_thread.quit()
+            self.simulator_thread.wait()
         self.btn_start.setEnabled(True)
-        self.btn_pause.setEnabled(False)
+        self.btn_pause.setEnabled(False)  # Desabilita o botão "Pausar"
         self.btn_stop.setEnabled(False)
+        
+        # Reinicia o estado do botão "Pausar"
+        self.paused = False  
+        self.btn_pause.setText("Pausar") 
 
     def pause_simulation(self):
         if not self.paused:
-            self.simulator.stop()  # Pause the simulator
+            self.worker.stop_simulator.emit()
             self.btn_pause.setText("Continuar")
             self.paused = True
         else:
-            self.simulator.start()  # Resume the simulator
+            self.worker.start_simulator.emit()
             self.btn_pause.setText("Pausar")
             self.paused = False
  
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MonitorGUI()
