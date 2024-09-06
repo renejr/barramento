@@ -12,12 +12,12 @@ class MonitorSimulator(QObject):  # Herdando de QObject para usar sinais
     async def simulate(self):
         while self.is_running:
             # Simulando sinais vitais:
-            heart_rate = random.uniform(50, 110)
-            systolic_bp = random.uniform(80, 150)
-            diastolic_bp = random.uniform(50, 100)
-            oxygen_saturation = random.uniform(90, 100)
-            body_temperature = random.uniform(35.0, 38.0)
-            respiratory_rate = random.uniform(10, 25)
+            heart_rate = random.uniform(45, 150)
+            systolic_bp = random.uniform(50, 200)
+            diastolic_bp = random.uniform(40, 150)
+            oxygen_saturation = random.uniform(50, 150)
+            body_temperature = random.uniform(34.0, 39.0)
+            respiratory_rate = random.uniform(8, 28)
 
             data = {
                 "heart_rate": heart_rate,
