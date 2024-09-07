@@ -172,8 +172,8 @@ class MonitorGUI(QMainWindow):
         self.alert_labels["body_temperature"].setText(self.check_alarms("body_temperature", data['body_temperature'], 35.0, 38.0))
         self.alert_labels["respiratory_rate"].setText(self.check_alarms("respiratory_rate", data['respiratory_rate'], 10, 25))
 
-        ## Atualize os gráficos
-        for data_key in data:
+        # Atualize os gráficos apenas para as chaves de sinais vitais
+        for data_key in ["heart_rate", "systolic_bp", "diastolic_bp", "oxygen_saturation", "body_temperature", "respiratory_rate"]:
             self.data_history[data_key].append(data[data_key])
             if len(self.data_history[data_key]) > self.max_data_points:
                 self.data_history[data_key] = self.data_history[data_key][-self.max_data_points:]
