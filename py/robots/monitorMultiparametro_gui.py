@@ -1,32 +1,50 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton
-from PyQt5.QtCore import Qt, QThread
-from PyQt5.QtCore import QObject, pyqtSignal  # Import QObject and pyqtSignal
-from monitorMultiparametro import MonitorSimulator  # Importe a classe do simulador
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer  # Import QObject and pyqtSignal
+from PyQt5.QtCore import QThread
+from monitorMultiparametro import MonitorSimulator
 import pyqtgraph as pg  # Importe a biblioteca pyqtgraph
 
 class Worker(QObject):
     data_updated = pyqtSignal(dict)
-    start_simulator = pyqtSignal()
-    stop_simulator = pyqtSignal()
+    stop_simulator = pyqtSignal() # Signal to stop the simulation
+    start_simulator = pyqtSignal() # Signal to start the simulation
 
     def __init__(self):
         super().__init__()
         self.simulator = MonitorSimulator()
         self.simulator.data_updated.connect(self.data_updated.emit)
-        self.start_simulator.connect(self.start)
-        self.stop_simulator.connect(self.stop)
+
+        self.timer = QTimer(self)  # Create timer with 'self' as parent
+        self.timer.timeout.connect(self.simulate_data)
+        self.timer.setInterval(1000)  # 1000 milliseconds = 1 second
+
+        self.monitor_simulator = MonitorSimulator()
+        self.stop_simulator.connect(self.monitor_simulator.stop)  # Conecte o sinal ao slot
+
+    def simulate(self):
+        self.simulator.is_running = True
+        while self.simulator.is_running:
+            self.simulator.simulate_data()
+            QThread.msleep(1000)  # Simular dados a cada 1 segundo (1000 ms)
+
+    def simulate_data(self):
+            if self.simulator.is_running:
+                self.simulator.simulate_data()
 
     def start(self):
         self.simulator.is_running = True
-        self.simulator.simulate_data()
+        self.timer.start()  # Start the timer
 
     def stop(self):
         self.simulator.is_running = False
+        self.timer.stop()  # Stop the timer
 
 class MonitorGUI(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.worker = Worker()
 
         self.setWindowTitle("Simulador de Monitor Multiparâmetro")
         self.setGeometry(100, 100, 800, 600)
@@ -180,7 +198,7 @@ class MonitorGUI(QMainWindow):
             self.data_plots[data_key].setData(self.data_history[data_key])
 
     def check_alarms(self, data_key, value, min_limit, max_limit):
-        print(data_key, value, min_limit, max_limit)
+        # print(data_key, value, min_limit, max_limit)
 
         # Código de verificação de alertas
         if value < min_limit:
