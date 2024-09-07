@@ -13,11 +13,13 @@ async def simulate_triage_station():
             diastolic_bp = random.uniform(60, 120)  # Pressão arterial diastólica em mmHg
             heart_rate = random.uniform(60, 100)  # Frequência cardíaca em bpm
             priority = random.randint(1, 5)  # Classificação de prioridade de atendimento (1 = emergência, 5 = baixa prioridade)
+            device = "ET" # Define o nome do dispositivo
 
             # Convertendo dados para formato binário
             #data = struct.pack('ffffI', temperature, systolic_bp, diastolic_bp, heart_rate, priority)
 
             data = {
+                'device': device,
                 'temperature': temperature,
                 'systolic_bp': systolic_bp,
                 'diastolic_bp': diastolic_bp,
