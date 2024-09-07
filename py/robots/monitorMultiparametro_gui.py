@@ -4,19 +4,21 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer  # Import QObject and pyqtSignal
 from PyQt5.QtCore import QThread
 from monitorMultiparametro import MonitorSimulator
+from enum import Enum
 import pyqtgraph as pg  # Importe a biblioteca pyqtgraph
 
 class Worker(QObject):
     data_updated = pyqtSignal(dict)
+    stop_timer_signal = pyqtSignal()
     stop_simulator = pyqtSignal() # Signal to stop the simulation
     start_simulator = pyqtSignal() # Signal to start the simulation
 
     def __init__(self):
         super().__init__()
         self.simulator = MonitorSimulator()
-        self.simulator.data_updated.connect(self.data_updated.emit)
+        # self.simulator.data_updated.connect(self.data_updated.emit)
 
-        self.timer = QTimer(self)  # Create timer with 'self' as parent
+        self.timer = QTimer()
         self.timer.timeout.connect(self.simulate_data)
         self.timer.setInterval(1000)  # 1000 milliseconds = 1 second
 
@@ -30,8 +32,8 @@ class Worker(QObject):
             QThread.msleep(1000)  # Simular dados a cada 1 segundo (1000 ms)
 
     def simulate_data(self):
-            if self.simulator.is_running:
-                self.simulator.simulate_data()
+        if self.simulator.is_running:
+            self.simulator.simulate_data()
 
     def start(self):
         self.simulator.is_running = True
@@ -39,7 +41,12 @@ class Worker(QObject):
 
     def stop(self):
         self.simulator.is_running = False
-        self.timer.stop()  # Stop the timer
+        self.stop_timer_signal.emit()  # Emit signal to stop the timer
+
+class SimulationState(Enum):
+    RUNNING = 1
+    PAUSED = 2
+    STOPPED = 3
 
 class MonitorGUI(QMainWindow):
     def __init__(self):
@@ -59,6 +66,7 @@ class MonitorGUI(QMainWindow):
         # Conectando o sinal aos slots
         self.worker.data_updated.connect(self.update_data)
         self.simulator_thread.started.connect(self.worker.start)
+        self.worker.stop_timer_signal.connect(self.stop_worker_timer)  # Conecte o sinal
 
         # Initialize data_labels, progress_bars, and alert_labels here
         self.data_labels = {}
@@ -174,6 +182,14 @@ class MonitorGUI(QMainWindow):
 
         layout.addLayout(vbox, row, col)
 
+    def stop_worker_timer(self):
+        self.worker.timer.stop()  # Stop the timer from the correct thread
+
+    def stop(self):
+        self.worker.stop()  # Emitir sinal para parar o timer
+        self.simulator_thread.quit()
+        self.simulator_thread.wait()
+
     def update_data(self, data):
         # Código dentro da função - indentado com 4 espaços
         self.data_labels["heart_rate"].setText(f"{data['heart_rate']:.2f}")
@@ -212,6 +228,10 @@ class MonitorGUI(QMainWindow):
             return "Sem Alarmes"
 
     def start_simulation(self):
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.worker.start_simulator.emit)
+        self.timer.start(1000)  # inicia o temporizador com um intervalo de 1 segundo
+        
         if not self.simulator_thread.isRunning():
             self.simulator_thread.start()
         else:
