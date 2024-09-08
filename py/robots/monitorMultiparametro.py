@@ -48,6 +48,9 @@ class MonitorSimulator(QObject):
         self.timer.stop()
         self.is_running = False        
 
+    def start(self):
+        self.is_running = True
+
     def simulate_data(self):
         if not self.is_running:
             return
