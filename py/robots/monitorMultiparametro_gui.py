@@ -1,52 +1,39 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton
 from PyQt5.QtCore import Qt
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer  # Import QObject and pyqtSignal
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QObject, pyqtSignal  # Import QObject and pyqtSignal
+from PyQt5.QtCore import QThread, QTimer
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton
 from monitorMultiparametro import MonitorSimulator
 from enum import Enum
 import pyqtgraph as pg  # Importe a biblioteca pyqtgraph
 
 class Worker(QObject):
     data_updated = pyqtSignal(dict)
-    stop_timer_signal = pyqtSignal()
-    stop_simulator = pyqtSignal() # Signal to stop the simulation
-    start_simulator = pyqtSignal() # Signal to start the simulation
+    stop_simulator = pyqtSignal()
+    start_simulator = pyqtSignal()
 
     def __init__(self):
         super().__init__()
         self.simulator = MonitorSimulator()
-        # self.simulator.data_updated.connect(self.data_updated.emit)
-
-        self.timer = QTimer()
+        self.timer = QTimer(self)
         self.timer.timeout.connect(self.simulate_data)
         self.timer.setInterval(1000)  # 1000 milliseconds = 1 second
-
-        self.monitor_simulator = MonitorSimulator()
-        self.stop_simulator.connect(self.monitor_simulator.stop)  # Conecte o sinal ao slot
-
-    def simulate(self):
-        self.simulator.is_running = True
-        while self.simulator.is_running:
-            self.simulator.simulate_data()
-            QThread.msleep(1000)  # Simular dados a cada 1 segundo (1000 ms)
+        self.start_simulator.connect(self.start)
+        self.stop_simulator.connect(self.stop)
 
     def simulate_data(self):
         if self.simulator.is_running:
-            self.simulator.simulate_data()
+            data = self.simulator.simulate_data()
+            if data is not None:
+                self.data_updated.emit(data)
 
     def start(self):
         self.simulator.is_running = True
-        self.timer.start()  # Start the timer
+        self.timer.start()
 
     def stop(self):
         self.simulator.is_running = False
-        self.stop_timer_signal.emit()  # Emit signal to stop the timer
-
-class SimulationState(Enum):
-    RUNNING = 1
-    PAUSED = 2
-    STOPPED = 3
+        self.timer.stop()
 
 class MonitorGUI(QMainWindow):
     def __init__(self):
@@ -63,10 +50,8 @@ class MonitorGUI(QMainWindow):
         self.simulator_thread = QThread()
         self.worker = Worker()
         self.worker.moveToThread(self.simulator_thread)
-        # Conectando o sinal aos slots
         self.worker.data_updated.connect(self.update_data)
         self.simulator_thread.started.connect(self.worker.start)
-        self.worker.stop_timer_signal.connect(self.stop_worker_timer)  # Conecte o sinal
 
         # Initialize data_labels, progress_bars, and alert_labels here
         self.data_labels = {}
@@ -228,14 +213,11 @@ class MonitorGUI(QMainWindow):
             return "Sem Alarmes"
 
     def start_simulation(self):
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.worker.start_simulator.emit)
-        self.timer.start(1000)  # inicia o temporizador com um intervalo de 1 segundo
-        
+        print("Starting simulation...")
         if not self.simulator_thread.isRunning():
             self.simulator_thread.start()
-        else:
-            self.worker.start_simulator.emit()
+        self.worker.start_simulator.emit()
+        print('Caroline Almeida Schardosim (2022)')
 
         # Limpa os dados dos gráficos antes de iniciar a simulação
         for data_key in self.data_history:
@@ -253,12 +235,10 @@ class MonitorGUI(QMainWindow):
             self.simulator_thread.quit()
             self.simulator_thread.wait()
         self.btn_start.setEnabled(True)
-        self.btn_pause.setEnabled(False)  # Desabilita o botão "Pausar"
+        self.btn_pause.setEnabled(False)
         self.btn_stop.setEnabled(False)
-        
-        # Reinicia o estado do botão "Pausar"
-        self.paused = False  
-        self.btn_pause.setText("Pausar") 
+        self.paused = False
+        self.btn_pause.setText("Pausar")
 
     def pause_simulation(self):
         if not self.paused:
